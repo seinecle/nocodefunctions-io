@@ -1,0 +1,1 @@
+java -jar target/NocodeIOWebServices-1.0.jar net.clementlevallois.nocodeimportwebservices.APIController
