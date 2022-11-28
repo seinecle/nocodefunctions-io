@@ -71,7 +71,7 @@ public class ExcelReader {
         }
     }
 
-    public static List<SheetModel> readExcelFile(InputStream is) throws FileNotFoundException, IOException {
+    public static List<SheetModel> readExcelFile(InputStream is, String gazeOption, String separator) throws FileNotFoundException, IOException {
 
         List<SheetModel> sheets = new ArrayList();
 
@@ -86,7 +86,8 @@ public class ExcelReader {
                 SheetModel sheetModel = new SheetModel();
                 sheetModel.setName(sheet.getSheetName());
                 int rowNumber = 0;
-                long lastTime = System.currentTimeMillis();
+
+                int leftiestColumnIndex = -1;
 
                 for (Row r : sheet) {
                     if (rowNumber == 0) {
@@ -94,11 +95,33 @@ public class ExcelReader {
                             if (cell == null) {
                                 continue;
                             }
-                            ColumnModel cm;
+                            int columnIndex = cell.getColumnIndex();
+                            int rowIndex = cell.getRowIndex();
+
+                            // this condition has for effect to store permanently the column index of the first column non empty on the left - which might not always be the one at index 0
+                            if ((leftiestColumnIndex == -1) && columnIndex > leftiestColumnIndex) {
+                                leftiestColumnIndex = columnIndex;
+                            }
+
                             String cellStringValue = ExcelReader.returnStringValue(cell);
                             cellStringValue = Jsoup.clean(cellStringValue, Safelist.basicWithImages().addAttributes("span", "style"));
-                            cm = new ColumnModel(String.valueOf(cell.getColumnIndex()), cellStringValue);
-                            headerNames.add(cm);
+
+                            // adding the first line as a header
+                            ColumnModel cmHeader = new ColumnModel(String.valueOf(columnIndex), cellStringValue);
+                            headerNames.add(cmHeader);
+
+                            if (gazeOption.equals("sim") && columnIndex > leftiestColumnIndex) {
+                                // adding the first line as a cells (in case the first line is not a header)
+                                String[] valuesInColumn = cellStringValue.split(separator);
+                                int valueCount = 0;
+                                for (String value : valuesInColumn) {
+                                    CellRecord cellRecord = new CellRecord(rowIndex, columnIndex + valueCount++, value.trim());
+                                    sheetModel.addCellRecord(cellRecord);
+                                }
+                            } else {
+                                CellRecord cellRecord = new CellRecord(rowIndex, columnIndex, cellStringValue);
+                                sheetModel.addCellRecord(cellRecord);
+                            }
                         }
                         sheetModel.setTableHeaderNames(headerNames);
                     }
@@ -108,10 +131,26 @@ public class ExcelReader {
                         if (cell == null) {
                             continue;
                         }
+
+                        int columnIndex = cell.getColumnIndex();
+                        int rowIndex = cell.getRowIndex();
+
                         String returnStringValue = ExcelReader.returnStringValue(cell);
                         returnStringValue = Jsoup.clean(returnStringValue, Safelist.basicWithImages().addAttributes("span", "style"));
-                        CellRecord cellRecord = new CellRecord(cell.getRowIndex(), cell.getColumnIndex(), returnStringValue);
-                        sheetModel.addCellRecord(cellRecord);
+
+                        // in the case of the similarity computation function, it is desirable to split the content of the target cell so that each value is taken as a separate target
+                        if (gazeOption.equals("sim") && columnIndex > leftiestColumnIndex) {
+                            String[] valuesInColumn = returnStringValue.split(separator);
+                            int valueCount = 0;
+                            for (String value : valuesInColumn) {
+                                CellRecord cellRecord = new CellRecord(rowIndex, columnIndex + valueCount++, value.trim());
+                                sheetModel.addCellRecord(cellRecord);
+                            }
+                        } else {
+                            CellRecord cellRecord = new CellRecord(cell.getRowIndex(), cell.getColumnIndex(), returnStringValue);
+                            sheetModel.addCellRecord(cellRecord);
+                        }
+
                     }
                 }
                 sheets.add(sheetModel);

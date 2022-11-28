@@ -10,6 +10,7 @@ import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.util.List;
+import java.util.Objects;
 import net.clementlevallois.importers.model.SheetModel;
 import net.clementlevallois.io.xlsx.ExcelReader;
 import net.clementlevallois.nocodeimportwebservices.APIController;
@@ -30,10 +31,13 @@ public class ImportXlsEndPoints {
             increment();
             byte[] bodyAsBytes = ctx.bodyAsBytes();
 
+            String gazeOption = Objects.requireNonNullElse(ctx.queryParam("gaze_option"), "none");
+            String separator = Objects.requireNonNullElse(ctx.queryParam("separator"), ",");
+
             InputStream is = new ByteArrayInputStream(bodyAsBytes);
-            
-            List<SheetModel> listsOfSheets = ExcelReader.readExcelFile(is);
-            
+
+            List<SheetModel> listsOfSheets = ExcelReader.readExcelFile(is, gazeOption, separator);
+
             byte[] byteArray = APIController.byteArraySerializerForSheets(listsOfSheets);
 
             ctx.result(byteArray).status(HttpURLConnection.HTTP_OK);
