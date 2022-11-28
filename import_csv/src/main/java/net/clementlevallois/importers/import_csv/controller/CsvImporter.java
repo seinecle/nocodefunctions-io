@@ -55,6 +55,9 @@ public class CsvImporter {
             for (String[] row : rows) {
                 int i = 0;
                 for (String field : row) {
+                    if (field == null){
+                        field = "";
+                    }
                     field = Jsoup.clean(field, Safelist.basicWithImages().addAttributes("span", "style"));
                     CellRecord cellRecord = new CellRecord(j, i++, field);
                     sheetModel.addCellRecord(cellRecord);
