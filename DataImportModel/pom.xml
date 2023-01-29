@@ -9,7 +9,7 @@
         <artifactId>parentbuild</artifactId>
         <version>1.0</version>
     </parent>    
-    <artifactId>io_model</artifactId>
+    <artifactId>io-model</artifactId>
     <version>1.0</version>
     <packaging>jar</packaging>
 

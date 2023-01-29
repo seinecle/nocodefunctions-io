@@ -93,16 +93,6 @@ public class ExcelSaver {
         }
         byte[] barray = bos.toByteArray();
         return barray;
-//            InputStream is = new ByteArrayInputStream(barray);
-//            file = DefaultStreamedContent.builder()
-//                    .name("results.xlsx")
-//                    .contentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-//                    .stream(() -> is)
-//                    .build();
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-//        return file;
     }
 
     public static byte[] exportTopics(Map<Integer, Multiset<String>> communitiesResult, int termsPerCommunity) {
@@ -135,21 +125,6 @@ public class ExcelSaver {
         }
         byte[] barray = bos.toByteArray();
         return barray;
-//        StreamedContent file = null;
-//        try {
-//            ByteArrayOutputStream bos = new ByteArrayOutputStream();
-//            wb.write(bos);
-//            byte[] barray = bos.toByteArray();
-//            InputStream is = new ByteArrayInputStream(barray);
-//            file = DefaultStreamedContent.builder()
-//                    .name("results.xlsx")
-//                    .contentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-//                    .stream(() -> is)
-//                    .build();
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-//        return file;
     }
 
     public static byte[] exportPdfMatcher(Map<String, List<Occurrence>> result) {
@@ -194,21 +169,6 @@ public class ExcelSaver {
         }
         byte[] barray = bos.toByteArray();
         return barray;
-//        StreamedContent file = null;
-//        try {
-//            ByteArrayOutputStream bos = new ByteArrayOutputStream();
-//            wb.write(bos);
-//            byte[] barray = bos.toByteArray();
-//            InputStream is = new ByteArrayInputStream(barray);
-//            file = DefaultStreamedContent.builder()
-//                    .name("results.xlsx")
-//                    .contentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-//                    .stream(() -> is)
-//                    .build();
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-//        return file;
     }
 
     public static byte[] exportHighlighted(List<String[]> results) {
@@ -237,21 +197,6 @@ public class ExcelSaver {
         }
         byte[] barray = bos.toByteArray();
         return barray;
-//        StreamedContent file = null;
-//        try {
-//            ByteArrayOutputStream bos = new ByteArrayOutputStream();
-//            wb.write(bos);
-//            byte[] barray = bos.toByteArray();
-//            InputStream is = new ByteArrayInputStream(barray);
-//            file = DefaultStreamedContent.builder()
-//                    .name("results.xlsx")
-//                    .contentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-//                    .stream(() -> is)
-//                    .build();
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-//        return file;
     }
 
     public static byte[] exportOrganic(List<Document> results, String lang) {
@@ -298,21 +243,6 @@ public class ExcelSaver {
         }
         byte[] barray = bos.toByteArray();
         return barray;
-//        StreamedContent file = null;
-//        try {
-//            ByteArrayOutputStream bos = new ByteArrayOutputStream();
-//            wb.write(bos);
-//            byte[] barray = bos.toByteArray();
-//            InputStream is = new ByteArrayInputStream(barray);
-//            file = DefaultStreamedContent.builder()
-//                    .name("graph.gexf")
-//                    .contentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-//                    .stream(() -> is)
-//                    .build();
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-//        return file;
     }
 
 }
