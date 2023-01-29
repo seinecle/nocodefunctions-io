@@ -30,42 +30,51 @@ public class CsvImporter {
     public List<SheetModel> importCsvFile(InputStream is, String fileName, String functionName, String gazeOption) {
         InputStreamReader reader;
         List<SheetModel> sheets = new ArrayList();
-            CsvParserSettings settings = new CsvParserSettings();
-            settings.detectFormatAutomatically();
-            settings.setMaxCharsPerColumn(-1);
-            CsvParser parser = new CsvParser(settings);
-            reader = new InputStreamReader(is, StandardCharsets.UTF_8);
-            List<String[]> rows = parser.parseAll(reader);
-            // if you want to see what delimiter it detected
+        CsvParserSettings settings = new CsvParserSettings();
+        settings.detectFormatAutomatically();
+        settings.setMaxCharsPerColumn(-1);
+        CsvParser parser = new CsvParser(settings);
+        reader = new InputStreamReader(is, StandardCharsets.UTF_8);
+        List<String[]> rows = parser.parseAll(reader);
+        // if you want to see what delimiter it detected
 //            CsvFormat format = parser.getDetectedFormat();
-            SheetModel sheetModel = new SheetModel();
-            sheetModel.setName(fileName);
-            ColumnModel cm;
-            List<ColumnModel> headerNames = new ArrayList();
-            String[] firstLine = rows.get(0);
-            int h = 0;
-            for (String header : firstLine) {
-                header = Jsoup.clean(header, Safelist.basicWithImages().addAttributes("span", "style"));
-                cm = new ColumnModel(String.valueOf(h++), header);
-                headerNames.add(cm);
-            }
-
-            sheetModel.setTableHeaderNames(headerNames);
-            int j = 0;
-            for (String[] row : rows) {
-                int i = 0;
-                for (String field : row) {
-                    if (field == null){
-                        field = "";
-                    }
-                    field = Jsoup.clean(field, Safelist.basicWithImages().addAttributes("span", "style"));
-                    CellRecord cellRecord = new CellRecord(j, i++, field);
-                    sheetModel.addCellRecord(cellRecord);
+        SheetModel sheetModel = new SheetModel();
+        sheetModel.setName(fileName);
+        ColumnModel cm;
+        List<ColumnModel> headerNames = new ArrayList();
+        String[] firstLine = rows.get(0);
+        int h = 0;
+        String substituteHeader = "ABCDEFGHIJKLMNOPQRSTUVWYZ";
+        int indexEmptyHeader = 0;
+        for (String header : firstLine) {
+            if (header == null) {
+                header = "header was empty! " + String.valueOf(substituteHeader.charAt(indexEmptyHeader));
+                indexEmptyHeader++;
+                if (indexEmptyHeader > substituteHeader.length() - 1) {
+                    indexEmptyHeader = 0;
                 }
-                j++;
             }
-            sheets.add(sheetModel);
-            parser.stopParsing();
+            header = Jsoup.clean(header, Safelist.basicWithImages().addAttributes("span", "style"));
+            cm = new ColumnModel(String.valueOf(h++), header);
+            headerNames.add(cm);
+        }
+
+        sheetModel.setTableHeaderNames(headerNames);
+        int j = 0;
+        for (String[] row : rows) {
+            int i = 0;
+            for (String field : row) {
+                if (field == null) {
+                    field = "";
+                }
+                field = Jsoup.clean(field, Safelist.basicWithImages().addAttributes("span", "style"));
+                CellRecord cellRecord = new CellRecord(j, i++, field);
+                sheetModel.addCellRecord(cellRecord);
+            }
+            j++;
+        }
+        sheets.add(sheetModel);
+        parser.stopParsing();
         return sheets;
     }
 }
