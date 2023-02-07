@@ -67,6 +67,7 @@ public class PdfImporter {
                 sheetModel.addCellRecord(cellRecord);
             }
             sheets.add(sheetModel);
+            myDocument.close();
 
         } catch (IOException ex) {
             Logger.getLogger(PdfImporter.class.getName()).log(Level.SEVERE, null, ex);
