@@ -13,6 +13,7 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -39,6 +40,28 @@ public class PdfImporter {
         SheetModel sheetModel = new SheetModel();
         sheetModel.setName(fileName);
 
+        Set<String> hyphens = Set.of(
+                Character.toString('\u2010'),
+                Character.toString('\u2011'),
+                Character.toString('\u2012'),
+                Character.toString('\u2013'),
+                Character.toString('\u002D'),
+                Character.toString('\u007E'),
+                Character.toString('\u00AD'),
+                Character.toString('\u058A'),
+                Character.toString('\u05BE'),
+                Character.toString('\u1806'),
+                Character.toString('\u2014'),
+                Character.toString('\u2015'),
+                Character.toString('\u2053'),
+                Character.toString('\u207B'),
+                Character.toString('\u208B'),
+                Character.toString('\u2212'),
+                Character.toString('\u301C'),
+                Character.toString('\uFE58'),
+                Character.toString('\uFE63'),
+                Character.toString('\uFF0D'));
+
         try {
             PdfDocument myDocument = new PdfDocument(new PdfReader(is));
             int numberOfPages = myDocument.getNumberOfPages();
@@ -57,6 +80,46 @@ public class PdfImporter {
                     }
                 }
             }
+            myDocument.close();
+
+            /* this step addresses the case of text imported from a PDF source.
+            
+            PDF imports can have their last words truncated at the end, like so:
+            
+            "Inbound call centers tend to focus on assistance for customers who need to solve their problems, ques-
+            tions bout a product or service, schedule appointments, dispatch technicians, or need instructions"
+
+            In this case, the last word of the first sentence should be removed,
+            and so should be the first word of the following line.
+            
+            Thx to https://twitter.com/Verukita1 for reporting the issue with a test case.
+            
+             */
+            boolean cutWordDetected = false;
+            for (Map.Entry<Integer, String> entry : lines.entrySet()) {
+                String line = entry.getValue().trim();
+                if (cutWordDetected) {
+                    int indexFirstSpace = line.indexOf(" ");
+                    if (indexFirstSpace > 0) {
+                        line = line.substring(indexFirstSpace + 1);
+                        entry.setValue(line);
+                    }
+                    cutWordDetected = false;
+                }
+                if (line.length() > 0) {
+                    String lastChar = line.substring(line.length() - 1);
+                    if (hyphens.contains(lastChar)) {
+                        cutWordDetected = true;
+                        int indexLastSpace = line.lastIndexOf(" ");
+                        if (indexLastSpace > 0) {
+                            line = line.substring(0, indexLastSpace);
+                            entry.setValue(line);
+                        }
+                        break;
+                    }
+                }
+            }
+
             ColumnModel cm;
             cm = new ColumnModel("0", lines.get(0));
             List<ColumnModel> headerNames = new ArrayList();
@@ -67,7 +130,6 @@ public class PdfImporter {
                 sheetModel.addCellRecord(cellRecord);
             }
             sheets.add(sheetModel);
-            myDocument.close();
 
         } catch (IOException ex) {
             Logger.getLogger(PdfImporter.class.getName()).log(Level.SEVERE, null, ex);
