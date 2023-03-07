@@ -83,8 +83,6 @@ public class ExcelSaver {
             Cell cell4 = row.createCell(4, CellType.STRING);
             cell4.setCellValue(doc.getExplanationPlainText());
         }
-//        StreamedContent file = null;
-//        try {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         try {
             wb.write(bos);
@@ -95,28 +93,75 @@ public class ExcelSaver {
         return barray;
     }
 
-    public static byte[] exportTopics(Map<Integer, Multiset<String>> communitiesResult, int termsPerCommunity) {
+    public static byte[] exportTopics(Map<Integer, Multiset<String>> keywordsPerTopic, Map<Integer, Multiset<Integer>> topicsPerLine, int termsPerCommunity) {
         XSSFWorkbook wb = new XSSFWorkbook();
-        XSSFSheet sheet = wb.createSheet("results");
+        XSSFSheet sheet = wb.createSheet("keywords per topic");
         int rowNumber = 0;
+
+
         // creating the rows
         for (int r = 0; r <= termsPerCommunity; r++) {
             sheet.createRow(r);
         }
 
-        for (Map.Entry<Integer, Multiset<String>> entry : communitiesResult.entrySet()) {
-            Integer communityNumber = entry.getKey();
+        for (Map.Entry<Integer, Multiset<String>> entry : keywordsPerTopic.entrySet()) {
+            Integer topicNumber = entry.getKey();
             Multiset<String> termsInOneCommunity = entry.getValue();
-            Cell cellHeader = sheet.getRow(0).createCell(communityNumber, CellType.STRING);
-            cellHeader.setCellValue("Topic " + communityNumber);
+            Cell cellHeader = sheet.getRow(0).createCell(topicNumber, CellType.STRING);
+            cellHeader.setCellValue("Topic " + topicNumber);
             List<Map.Entry<String, Integer>> sortDesckeepMostfrequent = termsInOneCommunity.sortDesckeepMostfrequent(termsInOneCommunity, termsPerCommunity);
             int rowValue = 1;
             for (Map.Entry<String, Integer> entry2 : sortDesckeepMostfrequent) {
-                Cell cellValue = sheet.getRow(rowValue).createCell(communityNumber, CellType.STRING);
-                cellValue.setCellValue(entry2.getKey() + " x " + entry2.getValue());
+                Cell cellValue = sheet.getRow(rowValue).createCell(topicNumber, CellType.STRING);
+                cellValue.setCellValue(entry2.getKey());
                 rowValue++;
             }
         }
+
+        /* a sheet where for each document, we see the topics it has been classified into
+         the score value for each topic is the sum, for each word of the document, of their normalized betweenness centrality x 1000 000.
+        This betweenness is computed on the network made of only the nodes and edges of the topic
+        (because a topic is a sub-region of the entire network of words composing the document)
+        SEE the Topics function for exact details of how the score is computed
+        */
+        XSSFSheet sheetDocuments = wb.createSheet("documents");
+        sheetDocuments.createRow(0);
+        Cell cellHeaderOne = sheetDocuments.getRow(0).createCell(1, CellType.STRING);
+        cellHeaderOne.setCellValue("document number");
+        Cell cellHeaderTwo = sheetDocuments.getRow(0).createCell(2, CellType.STRING);
+        cellHeaderTwo.setCellValue("1st topic");
+        Cell cellHeaderThree = sheetDocuments.getRow(0).createCell(3, CellType.STRING);
+        cellHeaderThree.setCellValue("score 1st topic");
+        Cell cellHeaderFour = sheetDocuments.getRow(0).createCell(4, CellType.STRING);
+        cellHeaderFour.setCellValue("2nd topic");
+        Cell cellHeaderFive = sheetDocuments.getRow(0).createCell(5, CellType.STRING);
+        cellHeaderFive.setCellValue("score 2nd topic");
+        Cell cellHeaderSix = sheetDocuments.getRow(0).createCell(6, CellType.STRING);
+        cellHeaderSix.setCellValue("3rd topic");
+        Cell cellHeaderSeven = sheetDocuments.getRow(0).createCell(7, CellType.STRING);
+        cellHeaderSeven.setCellValue("score 3rd topic");
+
+        rowNumber = 1;
+        for (Map.Entry<Integer, Multiset<Integer>> entry : topicsPerLine.entrySet()) {
+            sheetDocuments.createRow(rowNumber);
+            Integer lineNumber = entry.getKey();
+            Multiset<Integer> topTopics = entry.getValue();
+            Cell cell = sheetDocuments.getRow(rowNumber).createCell(1, CellType.STRING);
+            cell.setCellValue("document " + lineNumber);
+            List<Map.Entry<Integer, Integer>> sortDesckeepMostfrequent = topTopics.sortDesckeepMostfrequent(topTopics, 3);
+            int i = 2;
+            for (Map.Entry<Integer, Integer> topTopicsForOneLine : sortDesckeepMostfrequent) {
+                Cell cellValue = sheetDocuments.getRow(rowNumber).createCell(i, CellType.STRING);
+                cellValue.setCellValue(topTopicsForOneLine.getKey());
+                i++;
+                Cell cellScore = sheetDocuments.getRow(rowNumber).createCell(i, CellType.STRING);
+                cellScore.setCellValue(topTopicsForOneLine.getValue());
+                i++;
+            }
+            rowNumber++;
+        }
+        
+        
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         try {
             wb.write(bos);
