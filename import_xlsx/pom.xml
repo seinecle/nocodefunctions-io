@@ -11,12 +11,12 @@
     <dependencies>
         <dependency>
             <groupId>net.clementlevallois.io</groupId>
-            <artifactId>model</artifactId>
+            <artifactId>io-model</artifactId>
             <version>1.0</version>
         </dependency>
         <dependency>
             <groupId>net.clementlevallois.functions</groupId>
-            <artifactId>model</artifactId>
+            <artifactId>functions-model</artifactId>
             <version>1.0</version>
         </dependency>
         <dependency>
@@ -24,7 +24,7 @@
             <artifactId>utils-core</artifactId>
         </dependency>
         <dependency>
-            <groupId>net.clementlevallois.umigonfamily</groupId>
+            <groupId>net.clementlevallois.functions</groupId>
             <artifactId>umigon-model</artifactId>
             <version>1.0</version>
         </dependency>
