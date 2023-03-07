@@ -50,11 +50,11 @@ public class ExcelReader {
                     //                    sheetNames.add(next.getSheetName());
                     //                }
                     //            }
-                     OPCPackage pkg = OPCPackage.open(inputStream)) {
+                    OPCPackage pkg = OPCPackage.open(inputStream)) {
                 XSSFReader r = new XSSFReader(pkg);
                 XSSFReader.SheetIterator iter = (XSSFReader.SheetIterator) r.getSheetsData();
                 while (iter.hasNext()) {
-                    try ( InputStream stream = iter.next()) {
+                    try (InputStream stream = iter.next()) {
                         String sheetName = iter.getSheetName();
                         sheetNames.add(sheetName);
                     }
@@ -75,7 +75,7 @@ public class ExcelReader {
 
         List<SheetModel> sheets = new ArrayList();
 
-        try ( Workbook wb = StreamingReader.builder()
+        try (Workbook wb = StreamingReader.builder()
                 .rowCacheSize(100) // number of rows to keep in memory (defaults to 10)
                 .bufferSize(4096) // buffer size to use when reading InputStream to file (defaults to 1024)
                 .open(is)) {
@@ -224,7 +224,12 @@ public class ExcelReader {
         switch (cellType) {
             case NUMERIC -> {
                 double doubleVal = cell.getNumericCellValue();
-                return String.valueOf(doubleVal);
+                if (doubleVal == (int) doubleVal) {
+                    int value = Double.valueOf(doubleVal).intValue();
+                    return String.valueOf(value);
+                } else {
+                    return String.valueOf(doubleVal);
+                }
             }
             case STRING -> {
                 return cell.getStringCellValue();
