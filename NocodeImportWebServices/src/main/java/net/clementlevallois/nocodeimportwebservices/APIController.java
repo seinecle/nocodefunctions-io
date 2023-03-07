@@ -7,6 +7,7 @@ package net.clementlevallois.nocodeimportwebservices;
 
 import com.twitter.clientlib.TwitterCredentialsOAuth2;
 import com.twitter.clientlib.api.TwitterApi;
+import com.twitter.clientlib.auth.TwitterOAuth20Service;
 import com.twitter.clientlib.model.Tweet;
 import io.javalin.Javalin;
 import jakarta.json.Json;
@@ -63,7 +64,13 @@ public class APIController {
                 twitterClientSecret, "", "");
         twitterApiInstance = new TwitterApi();
 
-        app = TweetRetrieverEndPoints.addAll(app, twitterApiInstance, twitterApiCredentials);
+        TwitterOAuth20Service twitterOAuthService = new TwitterOAuth20Service(
+                twitterApiCredentials.getTwitterOauth2ClientId(),
+                twitterApiCredentials.getTwitterOAuth2ClientSecret(),
+                "https://test.nocodefunctions.com/twitter_auth.html",
+                "offline.access tweet.read users.read");
+
+        app = TweetRetrieverEndPoints.addAll(app, twitterApiInstance, twitterApiCredentials, twitterOAuthService);
         app = ImportCsvEndPoints.addAll(app);
         app = ImportTxtEndPoints.addAll(app);
         app = ImportPdfEndPoints.addAll(app);
@@ -104,7 +111,7 @@ public class APIController {
 
     public static String turnJsonObjectToString(JsonObject jsonObject) {
         String output = "{}";
-        try ( java.io.StringWriter stringWriter = new StringWriter()) {
+        try (java.io.StringWriter stringWriter = new StringWriter()) {
             var jsonWriter = Json.createWriter(stringWriter);
             jsonWriter.writeObject(jsonObject);
             output = stringWriter.toString();

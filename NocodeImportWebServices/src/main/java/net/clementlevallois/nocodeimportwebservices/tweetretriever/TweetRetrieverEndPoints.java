@@ -74,7 +74,7 @@ public class TweetRetrieverEndPoints {
 
             twitterApiOAuth2Credentials.setTwitterOauth2AccessToken(accessToken.getAccessToken());
             twitterApiOAuth2Credentials.setTwitterOauth2RefreshToken(accessToken.getRefreshToken());
-            TwitterApi apiInstance = new TwitterApi ();
+            TwitterApi apiInstance = new TwitterApi();
             apiInstance.setTwitterCredentials(twitterApiOAuth2Credentials);
 
             ResponseFull responseFull = new TweetRetrieverEndPoints().getRecentTweets(apiInstance, "seinecle", 7, 0);
@@ -108,7 +108,7 @@ public class TweetRetrieverEndPoints {
 
     }
 
-    public static Javalin addAll(Javalin app, TwitterApi apiInstance, TwitterCredentialsOAuth2 twitterApiOAuth2Credentials) throws Exception {
+    public static Javalin addAll(Javalin app, TwitterApi apiInstance, TwitterCredentialsOAuth2 twitterApiOAuth2Credentials, TwitterOAuth20Service twitterOAuthService) throws Exception {
 
         app.get("/api/tweets/json", ctx -> {
             increment();
@@ -117,7 +117,6 @@ public class TweetRetrieverEndPoints {
             String refreshToken = ctx.queryParam("refreshToken");
 
             // QUERY ON RECENT TWEETS
-
             String query = ctx.queryParam("query");
             String daysStartParam = ctx.queryParam("days_start");
             Integer daysStart = Math.min(Integer.parseInt(daysStartParam), 7);
@@ -173,7 +172,7 @@ public class TweetRetrieverEndPoints {
             result = apiInstance.tweets().tweetsRecentSearch(query, startTime, endTime, sinceId, untilId, maxResults, sortOrder, nextToken, paginationToken, expansions, tweetFields, userFields, mediaFields, placeFields, pollFields);
             responseFull.setResponse(result);
         } catch (ApiException e) {
-                responseFull.setApiException(e);
+            responseFull.setApiException(e);
         }
 
         return responseFull;

@@ -6,11 +6,17 @@
 package net.clementlevallois.nocodeimportwebservices.export_xlsx;
 
 import io.javalin.Javalin;
+import jakarta.json.Json;
+import jakarta.json.JsonObject;
+import jakarta.json.JsonReader;
 import java.io.ByteArrayInputStream;
 import java.io.ObjectInputStream;
+import java.io.StringReader;
 import java.net.HttpURLConnection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import net.clementlevallois.functions.model.Occurrence;
 import net.clementlevallois.io.xlsx.ExcelSaver;
 import static net.clementlevallois.nocodeimportwebservices.APIController.increment;
@@ -47,13 +53,39 @@ public class ExportXlsEndPoints {
             increment();
 
             int nbTerms = Integer.parseInt(ctx.queryParam("nbTerms"));
+            Map<Integer, Multiset<String>> keywordsPerTopic = new TreeMap();
+            Map<Integer, Multiset<Integer>> topicsPerLine = new TreeMap();
 
             byte[] bodyAsBytes = ctx.bodyAsBytes();
             ByteArrayInputStream bis = new ByteArrayInputStream(bodyAsBytes);
             ObjectInputStream ois = new ObjectInputStream(bis);
-            Map<Integer, Multiset<String>> communitiesResult = (Map<Integer, Multiset<String>>) ois.readObject();
+            String jsonResultAsString = (String) ois.readObject();
+            JsonReader jsonReader = Json.createReader(new StringReader(jsonResultAsString));
+            JsonObject jsonObject = jsonReader.readObject();
+            JsonObject keywordsPerTopicAsJson = jsonObject.getJsonObject("keywordsPerTopic");
+            for (String keyCommunity : keywordsPerTopicAsJson.keySet()) {
+                JsonObject termsAndFrequenciesForThisCommunity = keywordsPerTopicAsJson.getJsonObject(keyCommunity);
+                Iterator<String> iteratorTerms = termsAndFrequenciesForThisCommunity.keySet().iterator();
+                Multiset<String> termsAndFreqs = new Multiset();
+                while (iteratorTerms.hasNext()) {
+                    String nextTerm = iteratorTerms.next();
+                    termsAndFreqs.addSeveral(nextTerm, termsAndFrequenciesForThisCommunity.getInt(nextTerm));
+                }
+                keywordsPerTopic.put(Integer.valueOf(keyCommunity), termsAndFreqs);
+            }
+            JsonObject topicsPerLineAsJson = jsonObject.getJsonObject("topicsPerLine");
+            for (String lineNumber : topicsPerLineAsJson.keySet()) {
+                JsonObject topicsAndTheirCountsForOneLine = topicsPerLineAsJson.getJsonObject(lineNumber);
+                Iterator<String> iteratorTopics = topicsAndTheirCountsForOneLine.keySet().iterator();
+                Multiset<Integer> topicsAndFreqs = new Multiset();
+                while (iteratorTopics.hasNext()) {
+                    String nextTopic = iteratorTopics.next();
+                    topicsAndFreqs.addSeveral(Integer.valueOf(nextTopic), topicsAndTheirCountsForOneLine.getInt(nextTopic));
+                }
+                topicsPerLine.put(Integer.valueOf(lineNumber), topicsAndFreqs);
+            }
 
-            byte[] exportUmigon = ExcelSaver.exportTopics(communitiesResult, nbTerms);
+            byte[] exportUmigon = ExcelSaver.exportTopics(keywordsPerTopic, topicsPerLine, nbTerms);
 
             ctx.result(exportUmigon).status(HttpURLConnection.HTTP_OK);
         });
