@@ -13,17 +13,22 @@ import java.util.Map;
  *
  * @author LEVALLOIS
  */
-
-
 public class DataFormatConverter {
-    
-    public Map<Integer, String> convertToMapOfLines(boolean isBulkData, List<SheetModel> dataInSheets, String selectedSheetName, String selectedColumnIndex, boolean hasHeaders){
+
+    public Map<Integer, String> convertToMapOfLines(boolean isBulkData, List<SheetModel> dataInSheets, String selectedSheetName, String selectedColumnIndex, boolean hasHeaders) {
         Map<Integer, String> lines = new HashMap();
+
+        if (dataInSheets == null) {
+            return lines;
+        }
 
         if (isBulkData) {
             int i = 0;
             for (SheetModel sm : dataInSheets) {
                 List<CellRecord> cellRecords = sm.getColumnIndexToCellRecords().get(0);
+                if (cellRecords == null) {
+                    return lines;
+                }
                 for (CellRecord cr : cellRecords) {
                     lines.put(i++, cr.getRawValue());
                 }
@@ -36,10 +41,13 @@ public class DataFormatConverter {
                     break;
                 }
             }
-            if (sheetWithData == null){
+            if (sheetWithData == null) {
                 return lines;
             }
             List<CellRecord> cellRecords = sheetWithData.getCellRecords();
+            if (cellRecords == null) {
+                return lines;
+            }
             int i = 0;
             int selectedColAsInt = Integer.parseInt(selectedColumnIndex);
             for (CellRecord cr : cellRecords) {
@@ -54,5 +62,5 @@ public class DataFormatConverter {
         }
         return lines;
     }
-    
+
 }
