@@ -49,6 +49,21 @@ public class ExportXlsEndPoints {
             ctx.result(exportUmigon).status(HttpURLConnection.HTTP_OK);
         });
 
+        app.post("/api/export/xlsx/organic", ctx -> {
+            increment();
+
+            String lang = ctx.queryParam("lang");
+
+            byte[] bodyAsBytes = ctx.bodyAsBytes();
+            ByteArrayInputStream bis = new ByteArrayInputStream(bodyAsBytes);
+            ObjectInputStream ois = new ObjectInputStream(bis);
+            List<Document> documents = (List<Document>) ois.readObject();
+
+            byte[] exportOrganic = ExcelSaver.exportOrganic(documents, lang);
+
+            ctx.result(exportOrganic).status(HttpURLConnection.HTTP_OK);
+        });
+
         app.post("/api/export/xlsx/topics", ctx -> {
             increment();
 
@@ -88,19 +103,6 @@ public class ExportXlsEndPoints {
             byte[] exportUmigon = ExcelSaver.exportTopics(keywordsPerTopic, topicsPerLine, nbTerms);
 
             ctx.result(exportUmigon).status(HttpURLConnection.HTTP_OK);
-        });
-
-        app.post("/api/export/xlsx/organic", ctx -> {
-            increment();
-            String lang = ctx.pathParam("lang");
-            byte[] bodyAsBytes = ctx.bodyAsBytes();
-            ByteArrayInputStream bis = new ByteArrayInputStream(bodyAsBytes);
-            ObjectInputStream ois = new ObjectInputStream(bis);
-            List<Document> documents = (List<Document>) ois.readObject();
-
-            byte[] exportOrganic = ExcelSaver.exportOrganic(documents, lang);
-
-            ctx.result(exportOrganic).status(HttpURLConnection.HTTP_OK);
         });
 
         app.post("/api/export/xlsx/highlighter", ctx -> {

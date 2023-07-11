@@ -5,10 +5,6 @@
  */
 package net.clementlevallois.nocodeimportwebservices;
 
-import com.twitter.clientlib.TwitterCredentialsOAuth2;
-import com.twitter.clientlib.api.TwitterApi;
-import com.twitter.clientlib.auth.TwitterOAuth20Service;
-import com.twitter.clientlib.model.Tweet;
 import io.javalin.Javalin;
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
@@ -31,7 +27,6 @@ import net.clementlevallois.nocodeimportwebservices.import_csv.ImportCsvEndPoint
 import net.clementlevallois.nocodeimportwebservices.import_pdf.ImportPdfEndPoints;
 import net.clementlevallois.nocodeimportwebservices.import_txt.ImportTxtEndPoints;
 import net.clementlevallois.nocodeimportwebservices.import_xlsx.ImportXlsEndPoints;
-import net.clementlevallois.nocodeimportwebservices.tweetretriever.TweetRetrieverEndPoints;
 
 /**
  *
@@ -58,19 +53,19 @@ public class APIController {
         String twitterClientId = props.getProperty("twitter_client_id");
         String twitterClientSecret = props.getProperty("twitter_client_secret");
 
-        TwitterApi twitterApiInstance;
-        TwitterCredentialsOAuth2 twitterApiCredentials;
-        twitterApiCredentials = new TwitterCredentialsOAuth2(twitterClientId,
-                twitterClientSecret, "", "");
-        twitterApiInstance = new TwitterApi();
-
-        TwitterOAuth20Service twitterOAuthService = new TwitterOAuth20Service(
-                twitterApiCredentials.getTwitterOauth2ClientId(),
-                twitterApiCredentials.getTwitterOAuth2ClientSecret(),
-                "https://test.nocodefunctions.com/twitter_auth.html",
-                "offline.access tweet.read users.read");
-
-        app = TweetRetrieverEndPoints.addAll(app, twitterApiInstance, twitterApiCredentials, twitterOAuthService);
+//        TwitterApi twitterApiInstance;
+//        TwitterCredentialsOAuth2 twitterApiCredentials;
+//        twitterApiCredentials = new TwitterCredentialsOAuth2(twitterClientId,
+//                twitterClientSecret, "", "");
+//        twitterApiInstance = new TwitterApi();
+//
+//        TwitterOAuth20Service twitterOAuthService = new TwitterOAuth20Service(
+//                twitterApiCredentials.getTwitterOauth2ClientId(),
+//                twitterApiCredentials.getTwitterOAuth2ClientSecret(),
+//                "https://test.nocodefunctions.com/twitter_auth.html",
+//                "offline.access tweet.read users.read");
+//
+//        app = TweetRetrieverEndPoints.addAll(app, twitterApiInstance, twitterApiCredentials, twitterOAuthService);
         app = ImportCsvEndPoints.addAll(app);
         app = ImportTxtEndPoints.addAll(app);
         app = ImportPdfEndPoints.addAll(app);
@@ -89,15 +84,6 @@ public class APIController {
             System.out.println("issue with the api call counter");
             System.out.println(e.getMessage());
         }
-    }
-
-    public static byte[] byteArraySerializerForTweets(List<Tweet> o) throws IOException {
-        ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        ObjectOutputStream oos = new ObjectOutputStream(bos);
-        oos.writeObject(o);
-        oos.flush();
-        byte[] data = bos.toByteArray();
-        return data;
     }
 
     public static byte[] byteArraySerializerForSheets(List<SheetModel> o) throws IOException {
