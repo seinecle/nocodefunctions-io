@@ -16,7 +16,7 @@
         <dependency>
             <groupId>io.javalin</groupId>
             <artifactId>javalin</artifactId>
-            <version>5.3.1</version>
+            <version>5.5.0</version>
         </dependency>
         <dependency>
             <groupId>jakarta.json</groupId>
@@ -41,11 +41,6 @@
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-simple</artifactId>
             <version>1.8.0-beta4</version>
-        </dependency>
-        <dependency>
-            <groupId>com.twitter</groupId>
-            <artifactId>twitter-api-java-sdk</artifactId>
-            <version>1.2.4</version>
         </dependency>
         <dependency>
             <groupId>net.clementlevallois.utils</groupId>
@@ -73,7 +68,7 @@
         </dependency>
         <dependency>
             <groupId>net.clementlevallois.io</groupId>
-            <artifactId>io_model</artifactId>
+            <artifactId>io-model</artifactId>
             <version>1.0</version>
         </dependency>
     </dependencies>
