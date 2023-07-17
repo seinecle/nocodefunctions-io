@@ -26,7 +26,6 @@
         <dependency>
             <groupId>net.clementlevallois.functions</groupId>
             <artifactId>umigon-model</artifactId>
-            <version>1.0</version>
         </dependency>
         <dependency>
             <groupId>com.monitorjbl</groupId>

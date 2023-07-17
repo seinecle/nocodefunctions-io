@@ -55,7 +55,7 @@ public class ExcelSaver {
             }
             Row row = sheet.createRow(rowNumber++);
             Cell cell0 = row.createCell(0, CellType.STRING);
-            cell0.setCellValue(String.valueOf(rowNumber));
+            cell0.setCellValue(String.valueOf(rowNumber - 1));
             Cell cell1 = row.createCell(1, CellType.STRING);
             if (doc.getText() != null) {
                 cell1.setCellValue(doc.getText());
@@ -76,6 +76,67 @@ public class ExcelSaver {
             };
 
             cell2.setCellValue(sentiment);
+            Cell cell3 = row.createCell(3, CellType.STRING);
+            if (doc.getLanguage() != null) {
+                cell3.setCellValue(doc.getLanguage());
+            }
+            Cell cell4 = row.createCell(4, CellType.STRING);
+            cell4.setCellValue(doc.getExplanationPlainText());
+        }
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        try {
+            wb.write(bos);
+        } catch (IOException ex) {
+            Logger.getLogger(ExcelSaver.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        byte[] barray = bos.toByteArray();
+        return barray;
+    }
+
+    public static byte[] exportOrganic(List<Document> results, String lang) {
+        Locale locale = new Locale(lang);
+
+        ResourceBundle localeBundle = ResourceBundle.getBundle("net.clementlevallois.io.xlsx.i18n.text", locale);
+        XSSFWorkbook wb = new XSSFWorkbook();
+        XSSFSheet sheet = wb.createSheet("results");
+        int rowNumber = 0;
+        // creating the header
+        Row rowHeader = sheet.createRow(rowNumber++);
+        Cell cell0Header = rowHeader.createCell(0, CellType.STRING);
+        cell0Header.setCellValue(localeBundle.getString("general.nouns.line_number"));
+        Cell cell1Header = rowHeader.createCell(1, CellType.STRING);
+        cell1Header.setCellValue(localeBundle.getString("general.message.text_provided_as_input"));
+        Cell cell2Header = rowHeader.createCell(2, CellType.STRING);
+        cell2Header.setCellValue(localeBundle.getString("organic.general.tone_of_voice"));
+        Cell cell3Header = rowHeader.createCell(3, CellType.STRING);
+        cell3Header.setCellValue("language");
+        Cell cell4Header = rowHeader.createCell(4, CellType.STRING);
+        cell4Header.setCellValue(localeBundle.getString("general.nouns.explanations"));
+
+        for (Document doc : results) {
+            if (doc == null) {
+                continue;
+            }
+            Row row = sheet.createRow(rowNumber++);
+            Cell cell0 = row.createCell(0, CellType.STRING);
+            cell0.setCellValue(String.valueOf(rowNumber - 1));
+            Cell cell1 = row.createCell(1, CellType.STRING);
+            if (doc.getText() != null) {
+                cell1.setCellValue(doc.getText());
+            }
+            Cell cell2 = row.createCell(2, CellType.STRING);
+            if (doc.getCategoryCode() == null) {
+                System.out.println("no category code for this doc");
+                continue;
+            }
+            String organic;
+            if (doc.getCategorizationResult().toString().startsWith("_061")) {
+                organic = "📢 " + localeBundle.getString("organic.general.soundspromoted");
+            } else {
+                organic = "🌿 " + localeBundle.getString("organic.general.soundsorganic");
+            }
+
+            cell2.setCellValue(organic);
             Cell cell3 = row.createCell(3, CellType.STRING);
             if (doc.getLanguage() != null) {
                 cell3.setCellValue(doc.getLanguage());
@@ -243,51 +304,4 @@ public class ExcelSaver {
         byte[] barray = bos.toByteArray();
         return barray;
     }
-
-    public static byte[] exportOrganic(List<Document> results, String lang) {
-        Locale locale = new Locale(lang);
-        ResourceBundle localeBundle = ResourceBundle.getBundle("net.clementlevallois.io.xlsx.i18n.text", locale);
-
-        XSSFWorkbook wb = new XSSFWorkbook();
-        XSSFSheet sheet = wb.createSheet("results");
-        int rowNumber = 0;
-        // creating the header
-        Row rowHeader = sheet.createRow(rowNumber++);
-        Cell cell0Header = rowHeader.createCell(0, CellType.STRING);
-        cell0Header.setCellValue(localeBundle.getString("general.nouns.line_number"));
-        Cell cell1Header = rowHeader.createCell(1, CellType.STRING);
-        cell1Header.setCellValue(localeBundle.getString("general.message.text_provided_as_input"));
-        Cell cell2Header = rowHeader.createCell(2, CellType.STRING);
-        cell2Header.setCellValue(localeBundle.getString("organic.general.tone_of_voice"));
-
-        for (Document doc : results) {
-            if (doc == null) {
-                continue;
-            }
-            Row row = sheet.createRow(rowNumber++);
-            Cell cell0 = row.createCell(0, CellType.STRING);
-            cell0.setCellValue(String.valueOf(rowNumber));
-            Cell cell1 = row.createCell(1, CellType.STRING);
-            cell1.setCellValue(doc.getText());
-            Cell cell2 = row.createCell(2, CellType.STRING);
-
-            String organic;
-            if (doc.getCategorizationResult().toString().startsWith("_061")) {
-                organic = "📢 " + localeBundle.getString("organic.general.soundspromoted");
-            } else {
-                organic = "🌿 " + localeBundle.getString("organic.general.soundsorganic");
-            }
-
-            cell2.setCellValue(organic);
-        }
-        ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        try {
-            wb.write(bos);
-        } catch (IOException ex) {
-            Logger.getLogger(ExcelSaver.class.getName()).log(Level.SEVERE, null, ex);
-        }
-        byte[] barray = bos.toByteArray();
-        return barray;
-    }
-
 }
