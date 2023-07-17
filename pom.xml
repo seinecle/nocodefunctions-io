@@ -41,9 +41,14 @@
                 <version>2.9.1</version>
             </dependency>
             <dependency>
+                <groupId>net.clementlevallois.functions</groupId>
+                <artifactId>umigon-model</artifactId>
+                <version>0.12</version>
+            </dependency>
+            <dependency>
                 <groupId>net.clementlevallois.utils</groupId>
                 <artifactId>utils-core</artifactId>
-                <version>1.0</version>
+                <version>0.13</version>
             </dependency>
             <dependency>
                 <groupId>jakarta.json</groupId>

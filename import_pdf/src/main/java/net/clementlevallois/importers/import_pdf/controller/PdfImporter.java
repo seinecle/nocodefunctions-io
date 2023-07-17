@@ -4,10 +4,10 @@
  */
 package net.clementlevallois.importers.import_pdf.controller;
 
-import com.itextpdf.kernel.pdf.PdfDocument;
-import com.itextpdf.kernel.pdf.PdfReader;
-import com.itextpdf.kernel.pdf.canvas.parser.PdfTextExtractor;
-import com.itextpdf.kernel.pdf.canvas.parser.listener.SimpleTextExtractionStrategy;
+//import com.itextpdf.kernel.pdf.PdfDocument;
+//import com.itextpdf.kernel.pdf.PdfReader;
+//import com.itextpdf.kernel.pdf.canvas.parser.PdfTextExtractor;
+//import com.itextpdf.kernel.pdf.canvas.parser.listener.SimpleTextExtractionStrategy;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -20,6 +20,9 @@ import java.util.logging.Logger;
 import net.clementlevallois.importers.model.CellRecord;
 import net.clementlevallois.importers.model.ColumnModel;
 import net.clementlevallois.importers.model.SheetModel;
+import org.apache.pdfbox.multipdf.PageExtractor;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.text.PDFTextStripper;
 import org.jsoup.Jsoup;
 import org.jsoup.safety.Safelist;
 
@@ -28,10 +31,6 @@ import org.jsoup.safety.Safelist;
  * @author LEVALLOIS
  */
 public class PdfImporter {
-
-    public static void main(String[] args) {
-        System.out.println("Hello World!");
-    }
 
     public List<SheetModel> importPdfFile(InputStream is, String fileName, String localizedEmptyLineMessage) {
         Map<Integer, String> lines = new TreeMap();
@@ -63,14 +62,24 @@ public class PdfImporter {
                 Character.toString('\uFF0D'));
 
         try {
-            PdfDocument myDocument = new PdfDocument(new PdfReader(is));
-            int numberOfPages = myDocument.getNumberOfPages();
+            PDDocument doc = PDDocument.load(is);
+            PDFTextStripper pdfTextStripper = new PDFTextStripper();
+            PageExtractor pageExtractor;
+
+//            PdfDocument myDocument = new PdfDocument(new PdfReader(is));
+//            int numberOfPages = myDocument.getNumberOfPages();
+            int numberOfPages = doc.getPages().getCount();
             int pageNumber;
             int i = 0;
             for (pageNumber = 1; pageNumber <= numberOfPages; pageNumber++) {
                 sheetModel.getPageAndStartingLine().put(pageNumber, i);
-                String textInDoc = PdfTextExtractor.getTextFromPage(myDocument.getPage(pageNumber), new SimpleTextExtractionStrategy());
-                String linesArray[] = textInDoc.split("\\r?\\n");
+                pageExtractor = new PageExtractor(doc, pageNumber, pageNumber);
+                PDDocument pageAsDoc = pageExtractor.extract();
+                String textInPage = pdfTextStripper.getText(pageAsDoc);
+
+//                SimpleTextExtractionStrategy simpleTextExtractionStrategy = new SimpleTextExtractionStrategy();
+//                String textInDoc = PdfTextExtractor.getTextFromPage(myDocument.getPage(pageNumber), new SimpleTextExtractionStrategy());
+                String linesArray[] = textInPage.split("\\r?\\n");
                 for (String line : linesArray) {
                     line = Jsoup.clean(line, Safelist.basicWithImages().addAttributes("span", "style"));
                     if (!line.isBlank()) {
@@ -79,8 +88,10 @@ public class PdfImporter {
                         lines.put(i++, localizedEmptyLineMessage);
                     }
                 }
+                pageAsDoc.close();
             }
-            myDocument.close();
+            doc.close();
+//            myDocument.close();
 
             /* this step addresses the case of text imported from a PDF source.
             
@@ -96,14 +107,17 @@ public class PdfImporter {
             
              */
             boolean cutWordDetected = false;
+            String stichtedWord = "";
             for (Map.Entry<Integer, String> entry : lines.entrySet()) {
                 String line = entry.getValue().trim();
                 if (cutWordDetected) {
                     int indexFirstSpace = line.indexOf(" ");
                     if (indexFirstSpace > 0) {
-                        line = line.substring(indexFirstSpace + 1);
-                        entry.setValue(line);
+                        stichtedWord += line.substring(0, indexFirstSpace);
+                        line = stichtedWord + line.substring(indexFirstSpace);
                     }
+                    entry.setValue(line);
+                    stichtedWord = "";
                     cutWordDetected = false;
                 }
                 if (line.length() > 0) {
@@ -112,10 +126,12 @@ public class PdfImporter {
                         cutWordDetected = true;
                         int indexLastSpace = line.lastIndexOf(" ");
                         if (indexLastSpace > 0) {
+                            stichtedWord += line.substring(indexLastSpace, line.length() - 1);
                             line = line.substring(0, indexLastSpace);
-                            entry.setValue(line);
                         }
-                        break;
+                        entry.setValue(line);
+                    } else {
+                        stichtedWord = "";
                     }
                 }
             }
