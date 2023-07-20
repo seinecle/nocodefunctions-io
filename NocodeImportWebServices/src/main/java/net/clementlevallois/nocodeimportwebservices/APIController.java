@@ -107,5 +107,13 @@ public class APIController {
         return output;
 
     }
+    public static byte[] byteArraySerializerForAnyObject(Object o) throws IOException {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        ObjectOutputStream oos = new ObjectOutputStream(bos);
+        oos.writeObject(o);
+        oos.flush();
+        byte[] data = bos.toByteArray();
+        return data;
+    }
 
 }

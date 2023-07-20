@@ -15,6 +15,8 @@ import java.util.ResourceBundle;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import net.clementlevallois.functions.model.Occurrence;
+import net.clementlevallois.importers.model.CellRecord;
+import net.clementlevallois.importers.model.SheetModel;
 import net.clementlevallois.umigon.model.Document;
 import net.clementlevallois.utils.Multiset;
 import org.apache.poi.ss.usermodel.Cell;
@@ -30,7 +32,7 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 public class ExcelSaver {
 
     public static byte[] exportUmigon(List<Document> results, String lang) {
-        Locale locale = new Locale(lang);
+        Locale locale = Locale.of(lang);
 
         ResourceBundle localeBundle = ResourceBundle.getBundle("net.clementlevallois.io.xlsx.i18n.text", locale);
         XSSFWorkbook wb = new XSSFWorkbook();
@@ -93,8 +95,44 @@ public class ExcelSaver {
         return barray;
     }
 
+    public static byte[] exportPdfRegionExtractor(Map<String, SheetModel> results) {
+        XSSFWorkbook wb = new XSSFWorkbook();
+        XSSFSheet sheet = wb.createSheet("results");
+        int rowNumber = 0;
+        // creating the headers
+        Row rowHeader = sheet.createRow(rowNumber++);
+        Cell cell0Header = rowHeader.createCell(0, CellType.STRING);
+        cell0Header.setCellValue("file name");
+        Cell cell1Header = rowHeader.createCell(1, CellType.STRING);
+        cell1Header.setCellValue("page");
+        Cell cell2Header = rowHeader.createCell(2, CellType.STRING);
+        cell2Header.setCellValue("text extracted");
+
+        for (Map.Entry<String, SheetModel> entry : results.entrySet()) {
+            Row row = sheet.createRow(rowNumber++);
+            Cell cell0 = row.createCell(0, CellType.STRING);
+            cell0.setCellValue(entry.getKey());
+            List<CellRecord> cellRecords = entry.getValue().getCellRecords();
+            for (CellRecord cellRecord : cellRecords) {
+                row = sheet.createRow(rowNumber++);
+                Cell cell1 = row.createCell(1, CellType.STRING);
+                cell1.setCellValue(String.valueOf(cellRecord.getRowIndex()));
+                Cell cell2 = row.createCell(2, CellType.STRING);
+                cell2.setCellValue(cellRecord.getRawValue());
+            }
+        }
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        try {
+            wb.write(bos);
+        } catch (IOException ex) {
+            Logger.getLogger(ExcelSaver.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        byte[] barray = bos.toByteArray();
+        return barray;
+    }
+
     public static byte[] exportOrganic(List<Document> results, String lang) {
-        Locale locale = new Locale(lang);
+        Locale locale = Locale.of(lang);
 
         ResourceBundle localeBundle = ResourceBundle.getBundle("net.clementlevallois.io.xlsx.i18n.text", locale);
         XSSFWorkbook wb = new XSSFWorkbook();
@@ -159,7 +197,6 @@ public class ExcelSaver {
         XSSFSheet sheet = wb.createSheet("keywords per topic");
         int rowNumber = 0;
 
-
         // creating the rows
         for (int r = 0; r <= termsPerCommunity; r++) {
             sheet.createRow(r);
@@ -184,7 +221,7 @@ public class ExcelSaver {
         This betweenness is computed on the network made of only the nodes and edges of the topic
         (because a topic is a sub-region of the entire network of words composing the document)
         SEE the Topics function for exact details of how the score is computed
-        */
+         */
         XSSFSheet sheetDocuments = wb.createSheet("documents");
         sheetDocuments.createRow(0);
         Cell cellHeaderOne = sheetDocuments.getRow(0).createCell(1, CellType.STRING);
@@ -221,8 +258,7 @@ public class ExcelSaver {
             }
             rowNumber++;
         }
-        
-        
+
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         try {
             wb.write(bos);

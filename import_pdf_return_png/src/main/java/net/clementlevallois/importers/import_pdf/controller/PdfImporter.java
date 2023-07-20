@@ -39,28 +39,6 @@ public class PdfImporter {
         SheetModel sheetModel = new SheetModel();
         sheetModel.setName(fileName);
 
-        Set<String> hyphens = Set.of(
-                Character.toString('\u2010'),
-                Character.toString('\u2011'),
-                Character.toString('\u2012'),
-                Character.toString('\u2013'),
-                Character.toString('\u002D'),
-                Character.toString('\u007E'),
-                Character.toString('\u00AD'),
-                Character.toString('\u058A'),
-                Character.toString('\u05BE'),
-                Character.toString('\u1806'),
-                Character.toString('\u2014'),
-                Character.toString('\u2015'),
-                Character.toString('\u2053'),
-                Character.toString('\u207B'),
-                Character.toString('\u208B'),
-                Character.toString('\u2212'),
-                Character.toString('\u301C'),
-                Character.toString('\uFE58'),
-                Character.toString('\uFE63'),
-                Character.toString('\uFF0D'));
-
         try {
             PDDocument doc = PDDocument.load(is);
             PDFTextStripper pdfTextStripper = new PDFTextStripper();
@@ -77,11 +55,8 @@ public class PdfImporter {
                 PDDocument pageAsDoc = pageExtractor.extract();
                 String textInPage = pdfTextStripper.getText(pageAsDoc);
 
-//                SimpleTextExtractionStrategy simpleTextExtractionStrategy = new SimpleTextExtractionStrategy();
-//                String textInDoc = PdfTextExtractor.getTextFromPage(myDocument.getPage(pageNumber), new SimpleTextExtractionStrategy());
                 String linesArray[] = textInPage.split("\\r?\\n");
                 for (String line : linesArray) {
-                    line = Jsoup.clean(line, Safelist.basicWithImages().addAttributes("span", "style"));
                     if (!line.isBlank()) {
                         lines.put(i++, line);
                     } else {
@@ -106,35 +81,7 @@ public class PdfImporter {
             Thx to https://twitter.com/Verukita1 for reporting the issue with a test case.
             
              */
-            boolean cutWordDetected = false;
-            String stichtedWord = "";
-            for (Map.Entry<Integer, String> entry : lines.entrySet()) {
-                String line = entry.getValue().trim();
-                if (cutWordDetected) {
-                    int indexFirstSpace = line.indexOf(" ");
-                    if (indexFirstSpace > 0) {
-                        stichtedWord += line.substring(0, indexFirstSpace);
-                        line = stichtedWord + line.substring(indexFirstSpace);
-                    }
-                    entry.setValue(line);
-                    stichtedWord = "";
-                    cutWordDetected = false;
-                }
-                if (line.length() > 0) {
-                    String lastChar = line.substring(line.length() - 1);
-                    if (hyphens.contains(lastChar)) {
-                        cutWordDetected = true;
-                        int indexLastSpace = line.lastIndexOf(" ");
-                        if (indexLastSpace > 0) {
-                            stichtedWord += line.substring(indexLastSpace, line.length() - 1);
-                            line = line.substring(0, indexLastSpace);
-                        }
-                        entry.setValue(line);
-                    } else {
-                        stichtedWord = "";
-                    }
-                }
-            }
+            lines = Utils.fixHyphenatedWordsAndReturnOriginalEntries(lines);
 
             ColumnModel cm;
             cm = new ColumnModel("0", lines.get(0));

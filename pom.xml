@@ -22,7 +22,7 @@
     <modules>
         <module>import_txt</module>
         <module>import_csv</module>
-        <module>import_pdf</module>
+        <module>import_pdf_return_png</module>
         <module>DataImportModel</module>
         <module>NocodeImportWebServices</module>
         <module>import_xlsx</module>
@@ -84,20 +84,12 @@
     </dependencyManagement>
       
     <build>
-        <resources>
-            <resource>
-                <directory>src/main/java</directory>
-                <excludes>
-                    <exclude>**/*.java</exclude>
-                </excludes>
-            </resource>
-        </resources>
         <pluginManagement>
             <plugins>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
-                    <version>3.10.1</version>
+                    <version>3.11.0</version>
                     <executions>
                         <execution>
                             <goals>
@@ -110,7 +102,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-surefire-plugin</artifactId>
-                    <version>3.0.0-M7</version>
+                    <version>3.1.2</version>
                     <configuration>
                         <disableXmlReport>true</disableXmlReport>
                         <useFile>false</useFile>
@@ -134,7 +126,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-enforcer-plugin</artifactId>
-                    <version>3.1.0</version>
+                    <version>3.3.0</version>
                     <executions>
                         <execution>
                             <id>ban-bad-log4j-versions</id>

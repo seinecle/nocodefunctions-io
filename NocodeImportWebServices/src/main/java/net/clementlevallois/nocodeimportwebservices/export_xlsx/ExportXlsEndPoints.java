@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import net.clementlevallois.functions.model.Occurrence;
+import net.clementlevallois.importers.model.SheetModel;
 import net.clementlevallois.io.xlsx.ExcelSaver;
 import static net.clementlevallois.nocodeimportwebservices.APIController.increment;
 import net.clementlevallois.umigon.model.Document;
@@ -47,6 +48,19 @@ public class ExportXlsEndPoints {
             byte[] exportUmigon = ExcelSaver.exportUmigon(documents, lang);
 
             ctx.result(exportUmigon).status(HttpURLConnection.HTTP_OK);
+        });
+
+        app.post("/api/export/xlsx/pdf_region_extractor", ctx -> {
+            increment();
+
+            byte[] bodyAsBytes = ctx.bodyAsBytes();
+            ByteArrayInputStream bis = new ByteArrayInputStream(bodyAsBytes);
+            ObjectInputStream ois = new ObjectInputStream(bis);
+            Map<String,SheetModel> documents = (Map<String,SheetModel>) ois.readObject();
+
+            byte[] exportPdfRegionExtractor = ExcelSaver.exportPdfRegionExtractor(documents);
+
+            ctx.result(exportPdfRegionExtractor).status(HttpURLConnection.HTTP_OK);
         });
 
         app.post("/api/export/xlsx/organic", ctx -> {
