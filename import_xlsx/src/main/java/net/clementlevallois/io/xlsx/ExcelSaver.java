@@ -22,6 +22,7 @@ import net.clementlevallois.utils.Multiset;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.xssf.usermodel.XSSFCellStyle;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
@@ -32,11 +33,15 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 public class ExcelSaver {
 
     public static byte[] exportUmigon(List<Document> results, String lang) {
-        Locale locale = Locale.of(lang);
-
-        ResourceBundle localeBundle = ResourceBundle.getBundle("net.clementlevallois.io.xlsx.i18n.text", locale);
+        Locale locale = Locale.forLanguageTag(lang);
+        ResourceBundle localeBundle = ResourceBundle.getBundle("i18n.text", locale);
         XSSFWorkbook wb = new XSSFWorkbook();
         XSSFSheet sheet = wb.createSheet("results");
+        XSSFSheet sheetStats = wb.createSheet("statistics");
+
+        XSSFCellStyle style = (XSSFCellStyle) wb.createCellStyle();
+        style.setDataFormat(wb.createDataFormat().getFormat("0.00"));
+
         int rowNumber = 0;
         // creating the header
         Row rowHeader = sheet.createRow(rowNumber++);
@@ -50,7 +55,13 @@ public class ExcelSaver {
         cell3Header.setCellValue("language");
         Cell cell4Header = rowHeader.createCell(4, CellType.STRING);
         cell4Header.setCellValue(localeBundle.getString("general.nouns.explanations"));
-
+        int countPositive = 0;
+        int countNeutral = 0;
+        int countNegative = 0;
+        float percentagePositive = 0;
+        float percentageNeutral = 0;
+        float percentageNegative = 0;
+        float countDocuments = results.size();
         for (Document doc : results) {
             if (doc == null) {
                 continue;
@@ -68,15 +79,21 @@ public class ExcelSaver {
                 System.out.println("no category code for this doc");
                 continue;
             }
-            sentiment = switch (doc.getCategoryCode()) {
-                case "_12" ->
-                    "😔 " + doc.getCategoryLocalizedPlainText();
-                case "_11" ->
-                    "🤗 " + doc.getCategoryLocalizedPlainText();
-                default ->
-                    "😐 " + doc.getCategoryLocalizedPlainText();
-            };
+            switch (doc.getCategoryCode()) {
+                case "_12" -> {
+                    sentiment = "😔 " + doc.getCategoryLocalizedPlainText();
+                    countNegative++;
 
+                }
+                case "_11" -> {
+                    sentiment = "🤗 " + doc.getCategoryLocalizedPlainText();
+                    countPositive++;
+                }
+                default -> {
+                    sentiment = "😐 " + doc.getCategoryLocalizedPlainText();
+                    countNeutral++;
+                }
+            }
             cell2.setCellValue(sentiment);
             Cell cell3 = row.createCell(3, CellType.STRING);
             if (doc.getLanguage() != null) {
@@ -85,6 +102,40 @@ public class ExcelSaver {
             Cell cell4 = row.createCell(4, CellType.STRING);
             cell4.setCellValue(doc.getExplanationPlainText());
         }
+
+        Row row = sheetStats.createRow(0);
+        Cell cell0 = row.createCell(1, CellType.STRING);
+        cell0.setCellValue("count");
+        Cell cell1 = row.createCell(2, CellType.STRING);
+        cell1.setCellValue("percentage");
+
+        row = sheetStats.createRow(1);
+        cell0 = row.createCell(0, CellType.STRING);
+        cell0.setCellValue("positive");
+        cell1 = row.createCell(1, CellType.NUMERIC);
+        cell1.setCellValue(countPositive);
+        Cell cell2 = row.createCell(2, CellType.NUMERIC);
+        cell2.setCellValue((float) countPositive / countDocuments);
+        cell2.setCellStyle(style);
+
+        row = sheetStats.createRow(2);
+        cell0 = row.createCell(0, CellType.STRING);
+        cell0.setCellValue("negative");
+        cell1 = row.createCell(1, CellType.NUMERIC);
+        cell1.setCellValue(countNegative);
+        cell2 = row.createCell(2, CellType.NUMERIC);
+        cell2.setCellValue((float) countNegative / countDocuments);
+        cell2.setCellStyle(style);
+
+        row = sheetStats.createRow(3);
+        cell0 = row.createCell(0, CellType.STRING);
+        cell0.setCellValue("neutral");
+        cell1 = row.createCell(1, CellType.NUMERIC);
+        cell1.setCellValue(countNeutral);
+        cell2 = row.createCell(2, CellType.NUMERIC);
+        cell2.setCellValue((float) countNeutral / countDocuments);
+        cell2.setCellStyle(style);
+
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         try {
             wb.write(bos);
@@ -132,9 +183,8 @@ public class ExcelSaver {
     }
 
     public static byte[] exportOrganic(List<Document> results, String lang) {
-        Locale locale = Locale.of(lang);
-
-        ResourceBundle localeBundle = ResourceBundle.getBundle("net.clementlevallois.io.xlsx.i18n.text", locale);
+        Locale locale = Locale.forLanguageTag(lang);
+        ResourceBundle localeBundle = ResourceBundle.getBundle("i18n.text", locale);
         XSSFWorkbook wb = new XSSFWorkbook();
         XSSFSheet sheet = wb.createSheet("results");
         int rowNumber = 0;
