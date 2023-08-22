@@ -43,13 +43,6 @@ public class ExcelReader {
         List<String> sheetNames = new ArrayList();
         try {
             try (
-                    //            try (Workbook wb = WorkbookFactory.create(file.getInputStream())) {
-                    //                Iterator<Sheet> sheetIterator = wb.sheetIterator();
-                    //                while (sheetIterator.hasNext()) {
-                    //                    Sheet next = sheetIterator.next();
-                    //                    sheetNames.add(next.getSheetName());
-                    //                }
-                    //            }
                     OPCPackage pkg = OPCPackage.open(inputStream)) {
                 XSSFReader r = new XSSFReader(pkg);
                 XSSFReader.SheetIterator iter = (XSSFReader.SheetIterator) r.getSheetsData();
@@ -154,70 +147,11 @@ public class ExcelReader {
                     }
                 }
                 sheets.add(sheetModel);
-                // if we are computing cooccurrences, we need to set the file name for a sheet name and the column to zero.
-//                if (sessionBean.getFunction().equals("gaze") && gazeBean != null && gazeBean.getOption().equals("1")) {
-//                    setSelectedColumnIndex("0");
-//                    setSelectedSheetName(file.getFileName() + "_" + sheet.getSheetName());
-//                }
             }
         }
         return sheets;
     }
 
-//    public static List<SheetModel> getDataInSheets(UploadedFile file) throws FileNotFoundException, IOException {
-//        List<SheetModel> sheetsData = new ArrayList();
-//        return sheetsData;
-//    }
-//    public static List<SheetModel> readAll(UploadedFile file) throws FileNotFoundException, IOException {
-//
-//        List<SheetModel> sheets = new ArrayList();
-//
-//        try (Workbook wb = WorkbookFactory.create(file.getInputStream())) {
-//            int numberOfSheets = wb.getNumberOfSheets();
-//            for (int i = 0; i < numberOfSheets; i++) {
-//                List< Map<String, ColumnModel>> sheetData = new ArrayList();
-//                List<ColumnModel> headerNames = new ArrayList();
-//                SheetModel sheetModel = new SheetModel();
-//                Sheet sheet = wb.getSheetAt(i);
-//                sheetModel.setName(sheet.getSheetName());
-//                int firstRowNum = sheet.getFirstRowNum();
-//                int lastRowNum = sheet.getLastRowNum();
-//                Row headerRow = sheet.getRow(firstRowNum);
-//                short minColIx = headerRow.getFirstCellNum();
-//                short maxColIx = headerRow.getLastCellNum();
-//                for (short colIx = minColIx; colIx < maxColIx; colIx++) {
-//                    Cell cell = headerRow.getCell(colIx);
-//                    if (cell == null) {
-//                        continue;
-//                    }
-//
-//                    ColumnModel cm;
-//                    cm = new ColumnModel(cell.getStringCellValue(), String.valueOf(colIx));
-//                    headerNames.add(cm);
-//                }
-//                Row currentRow;
-//                int startRow = 0;
-//                for (int j = startRow; j < lastRowNum; j++) {
-//                    currentRow = sheet.getRow(j);
-//                    Map<String, ColumnModel> row = new HashMap();
-//                    for (short colIx = minColIx; colIx < maxColIx; colIx++) {
-//                        Cell cell = currentRow.getCell(colIx);
-//                        if (cell == null) {
-//                            continue;
-//                        }
-//                        row.put(headerNames.get(colIx).getHeader(), new ColumnModel(headerNames.get(colIx).getHeader(), returnStringValue(cell)));
-//                    }
-//                    sheetData.add(row);
-//                }
-//
-//                sheetModel.setSheetData(sheetData);
-//                sheetModel.setTableHeaderNames(headerNames);
-//                sheets.add(sheetModel);
-//            }
-//        }
-//
-//        return sheets;
-//    }
     public static String returnStringValue(Cell cell) {
         CellType cellType = cell.getCellType();
 

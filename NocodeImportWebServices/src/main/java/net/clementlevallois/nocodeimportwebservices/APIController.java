@@ -50,22 +50,6 @@ public class APIController {
         }).start(Integer.parseInt(port));
 
         pwdOwner = props.getProperty("pwdOwner");
-        String twitterClientId = props.getProperty("twitter_client_id");
-        String twitterClientSecret = props.getProperty("twitter_client_secret");
-
-//        TwitterApi twitterApiInstance;
-//        TwitterCredentialsOAuth2 twitterApiCredentials;
-//        twitterApiCredentials = new TwitterCredentialsOAuth2(twitterClientId,
-//                twitterClientSecret, "", "");
-//        twitterApiInstance = new TwitterApi();
-//
-//        TwitterOAuth20Service twitterOAuthService = new TwitterOAuth20Service(
-//                twitterApiCredentials.getTwitterOauth2ClientId(),
-//                twitterApiCredentials.getTwitterOAuth2ClientSecret(),
-//                "https://test.nocodefunctions.com/twitter_auth.html",
-//                "offline.access tweet.read users.read");
-//
-//        app = TweetRetrieverEndPoints.addAll(app, twitterApiInstance, twitterApiCredentials, twitterOAuthService);
         app = ImportCsvEndPoints.addAll(app);
         app = ImportTxtEndPoints.addAll(app);
         app = ImportPdfEndPoints.addAll(app);
