@@ -78,6 +78,9 @@ public class Utils {
         String stichtedWord = "";
 
         for (Map.Entry<Integer, String> entry : lines.entrySet()) {
+            if (entry.getValue() == null) {
+                continue;
+            }
             String line = entry.getValue().trim();
             if (cutWordDetected) {
                 int indexFirstSpace = line.indexOf(" ");
