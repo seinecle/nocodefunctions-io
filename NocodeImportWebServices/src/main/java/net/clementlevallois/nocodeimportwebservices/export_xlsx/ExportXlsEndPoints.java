@@ -13,6 +13,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ObjectInputStream;
 import java.io.StringReader;
 import java.net.HttpURLConnection;
+import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -21,7 +22,7 @@ import net.clementlevallois.functions.model.Occurrence;
 import net.clementlevallois.importers.model.SheetModel;
 import net.clementlevallois.io.xlsx.ExcelSaver;
 import static net.clementlevallois.nocodeimportwebservices.APIController.increment;
-import net.clementlevallois.umigon.model.Document;
+import net.clementlevallois.umigon.model.classification.Document;
 import net.clementlevallois.utils.Multiset;
 
 /**
@@ -45,9 +46,13 @@ public class ExportXlsEndPoints {
             ObjectInputStream ois = new ObjectInputStream(bis);
             List<Document> documents = (List<Document>) ois.readObject();
 
-            byte[] exportUmigon = ExcelSaver.exportUmigon(documents, lang);
-
-            ctx.result(exportUmigon).status(HttpURLConnection.HTTP_OK);
+            if (documents == null) {
+                String errorMessage = "documents in body of umigon export to excel was null";
+                ctx.result(errorMessage.getBytes(StandardCharsets.UTF_8)).status(HttpURLConnection.HTTP_BAD_REQUEST);
+            } else {
+                byte[] exportUmigon = ExcelSaver.exportUmigon(documents, lang);
+                ctx.result(exportUmigon).status(HttpURLConnection.HTTP_OK);
+            }
         });
 
         app.post("/api/export/xlsx/pdf_region_extractor", ctx -> {
@@ -56,7 +61,7 @@ public class ExportXlsEndPoints {
             byte[] bodyAsBytes = ctx.bodyAsBytes();
             ByteArrayInputStream bis = new ByteArrayInputStream(bodyAsBytes);
             ObjectInputStream ois = new ObjectInputStream(bis);
-            Map<String,SheetModel> documents = (Map<String,SheetModel>) ois.readObject();
+            Map<String, SheetModel> documents = (Map<String, SheetModel>) ois.readObject();
 
             byte[] exportPdfRegionExtractor = ExcelSaver.exportPdfRegionExtractor(documents);
 

@@ -22,10 +22,9 @@
     <modules>
         <module>import_txt</module>
         <module>import_csv</module>
-        <module>import_pdf_return_png</module>
+        <module>import_xlsx</module>
         <module>DataImportModel</module>
         <module>NocodeImportWebServices</module>
-        <module>import_xlsx</module>
     </modules>
     
     <dependencyManagement>
@@ -40,10 +39,25 @@
                 <artifactId>univocity-parsers</artifactId>
                 <version>2.9.1</version>
             </dependency>
+			<dependency>
+				<groupId>com.sigpwned</groupId>
+				<artifactId>chardet4j</artifactId>
+				<version>74.2.0</version>
+			</dependency>
+			<dependency>
+				<groupId>net.clementlevallois.io</groupId>
+				<artifactId>io-model</artifactId>
+				<version>1.0</version>
+			</dependency>
             <dependency>
                 <groupId>net.clementlevallois.functions</groupId>
                 <artifactId>umigon-model</artifactId>
-                <version>0.12</version>
+                <version>0.15</version>
+            </dependency>
+            <dependency>
+                <groupId>net.clementlevallois.functions</groupId>
+                <artifactId>umigon-model-classification</artifactId>
+                <version>0.10</version>
             </dependency>
             <dependency>
                 <groupId>net.clementlevallois.utils</groupId>
@@ -80,6 +94,12 @@
                 <scope>test</scope>
                 <type>jar</type>
             </dependency>
+			<dependency>
+				<groupId>junit</groupId>
+				<artifactId>junit</artifactId>
+				<version>4.13.2</version>
+				<scope>test</scope>
+			</dependency>
         </dependencies>
     </dependencyManagement>
       
@@ -106,19 +126,6 @@
                     <configuration>
                         <disableXmlReport>true</disableXmlReport>
                         <useFile>false</useFile>
-                    </configuration>
-                </plugin>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-jar-plugin</artifactId>
-                    <version>3.3.0</version>                
-                    <configuration>
-                        <archive>
-                            <manifest>
-                                <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
-                                <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries> 
-                            </manifest>
-                        </archive>
                     </configuration>
                 </plugin>
                 <!-- plug-in configuration to put into your parent POM for avoiding any usages of outdated log4j2 versions,

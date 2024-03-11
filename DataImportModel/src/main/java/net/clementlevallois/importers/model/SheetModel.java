@@ -87,7 +87,9 @@ public class SheetModel implements Serializable {
             } else {
                 valueToShowInTable = cellRecord.getValueWithExtraFormatting();
             }
-
+            if (valueToShowInTable == null){
+                valueToShowInTable = "";
+            }
             fullRowStringBuilder.append(valueToShowInTable.trim());
 
             ColumnModel valueInColumn = new ColumnModel(String.valueOf(colIndex), valueToShowInTable);

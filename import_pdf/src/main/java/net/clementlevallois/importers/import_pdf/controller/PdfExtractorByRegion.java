@@ -14,7 +14,6 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.TreeMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -65,7 +64,6 @@ public class PdfExtractorByRegion {
                     text = Jsoup.clean(text, Safelist.basicWithImages().addAttributes("span", "style"));
                     textPerPage.put(pageNumber, text);
                 }
-                doc.close();
             } else {
                 PDPage docPage = doc.getPage(selectedPage);
                 PDFTextStripperByArea textStripper = new PDFTextStripperByArea();
@@ -81,7 +79,7 @@ public class PdfExtractorByRegion {
                 text = Jsoup.clean(text, Safelist.basicWithImages().addAttributes("span", "style"));
                 textPerPage.put(selectedPage, text);
             }
-
+            doc.close();
             ColumnModel cm;
             cm = new ColumnModel("0", textPerPage.get(0));
             List<ColumnModel> headerNames = new ArrayList();

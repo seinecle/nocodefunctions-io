@@ -4,10 +4,12 @@
  */
 package net.clementlevallois.importers.import_csv.controller;
 
+import com.sigpwned.chardet4j.Chardet;
 import com.univocity.parsers.csv.CsvParser;
 import com.univocity.parsers.csv.CsvParserSettings;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -27,54 +29,65 @@ public class CsvImporter {
         System.out.println("Hello World!");
     }
 
-    public List<SheetModel> importCsvFile(InputStream is, String fileName, String functionName, String gazeOption) {
-        InputStreamReader reader;
-        List<SheetModel> sheets = new ArrayList();
-        CsvParserSettings settings = new CsvParserSettings();
-        settings.detectFormatAutomatically();
-        settings.setMaxCharsPerColumn(-1);
-        CsvParser parser = new CsvParser(settings);
-        reader = new InputStreamReader(is, StandardCharsets.UTF_8);
-        List<String[]> rows = parser.parseAll(reader);
-        // if you want to see what delimiter it detected
+    public List<SheetModel> importCsvFile(byte[] bytes, String fileName, String functionName, String gazeOption) {
+        Reader reader = null;
+        try {
+            List<SheetModel> sheets = new ArrayList();
+            CsvParserSettings settings = new CsvParserSettings();
+            settings.detectFormatAutomatically();
+            settings.setMaxCharsPerColumn(-1);
+            CsvParser parser = new CsvParser(settings);
+            ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(bytes);
+            reader = Chardet.decode(byteArrayInputStream, StandardCharsets.UTF_8);
+            List<String[]> rows = parser.parseAll(reader);
+            // if you want to see what delimiter it detected
 //            CsvFormat format = parser.getDetectedFormat();
-        SheetModel sheetModel = new SheetModel();
-        sheetModel.setName(fileName);
-        ColumnModel cm;
-        List<ColumnModel> headerNames = new ArrayList();
-        String[] firstLine = rows.get(0);
-        int h = 0;
-        String substituteHeader = "ABCDEFGHIJKLMNOPQRSTUVWYZ";
-        int indexEmptyHeader = 0;
-        for (String header : firstLine) {
-            if (header == null) {
-                header = "header was empty! " + String.valueOf(substituteHeader.charAt(indexEmptyHeader));
-                indexEmptyHeader++;
-                if (indexEmptyHeader > substituteHeader.length() - 1) {
-                    indexEmptyHeader = 0;
+            SheetModel sheetModel = new SheetModel();
+            sheetModel.setName(fileName);
+            ColumnModel cm;
+            List<ColumnModel> headerNames = new ArrayList();
+            String[] firstLine = rows.get(0);
+            int h = 0;
+            String substituteHeader = "ABCDEFGHIJKLMNOPQRSTUVWYZ";
+            int indexEmptyHeader = 0;
+            for (String header : firstLine) {
+                if (header == null) {
+                    header = "header was empty! " + String.valueOf(substituteHeader.charAt(indexEmptyHeader));
+                    indexEmptyHeader++;
+                    if (indexEmptyHeader > substituteHeader.length() - 1) {
+                        indexEmptyHeader = 0;
+                    }
                 }
+                header = Jsoup.clean(header, Safelist.basicWithImages().addAttributes("span", "style"));
+                cm = new ColumnModel(String.valueOf(h++), header);
+                headerNames.add(cm);
             }
-            header = Jsoup.clean(header, Safelist.basicWithImages().addAttributes("span", "style"));
-            cm = new ColumnModel(String.valueOf(h++), header);
-            headerNames.add(cm);
-        }
-
-        sheetModel.setTableHeaderNames(headerNames);
-        int j = 0;
-        for (String[] row : rows) {
-            int i = 0;
-            for (String field : row) {
-                if (field == null) {
-                    field = "";
+            sheetModel.setTableHeaderNames(headerNames);
+            int j = 0;
+            for (String[] row : rows) {
+                int i = 0;
+                for (String field : row) {
+                    if (field == null) {
+                        field = "";
+                    }
+                    field = Jsoup.clean(field, Safelist.basicWithImages().addAttributes("span", "style"));
+                    CellRecord cellRecord = new CellRecord(j, i++, field);
+                    sheetModel.addCellRecord(cellRecord);
                 }
-                field = Jsoup.clean(field, Safelist.basicWithImages().addAttributes("span", "style"));
-                CellRecord cellRecord = new CellRecord(j, i++, field);
-                sheetModel.addCellRecord(cellRecord);
+                j++;
             }
-            j++;
+            sheets.add(sheetModel);
+            parser.stopParsing();
+            return sheets;
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        } finally {
+            try {
+                reader.close();
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
         }
-        sheets.add(sheetModel);
-        parser.stopParsing();
-        return sheets;
+        return null;
     }
 }

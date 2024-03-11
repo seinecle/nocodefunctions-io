@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.io.StringWriter;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.time.LocalDate;
@@ -39,10 +40,18 @@ public class APIController {
      */
     private static Javalin app;
     public static String pwdOwner;
+    public static Path tempFilesFolder;
 
     public static void main(String[] args) throws Exception {
         Properties props = new Properties();
         props.load(new FileInputStream("private/props.properties"));
+
+        boolean isLocal = System.getProperty("os.name").toLowerCase().contains("win");
+        if (isLocal) {
+            tempFilesFolder = Path.of(props.getProperty("pathToTempFilesWindows"));
+        } else {
+            tempFilesFolder = Path.of(props.getProperty("pathToTempFilesLinux"));
+        }
 
         String port = props.getProperty("port");
         app = Javalin.create(config -> {
@@ -91,6 +100,7 @@ public class APIController {
         return output;
 
     }
+
     public static byte[] byteArraySerializerForAnyObject(Object o) throws IOException {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         ObjectOutputStream oos = new ObjectOutputStream(bos);

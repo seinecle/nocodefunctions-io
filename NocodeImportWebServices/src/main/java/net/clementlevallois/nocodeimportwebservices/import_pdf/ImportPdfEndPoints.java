@@ -12,21 +12,25 @@ import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 import jakarta.json.JsonReader;
 import java.io.ByteArrayInputStream;
+import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.StringReader;
-import java.math.BigDecimal;
 import java.net.HttpURLConnection;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Base64;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import net.clementlevallois.importers.import_pdf.controller.PdfImporter;
 import net.clementlevallois.importers.import_pdf.controller.PdfExtractorByRegion;
 import net.clementlevallois.importers.import_pdf.controller.PdfToPngConverter;
+import net.clementlevallois.importers.model.CellRecord;
 import net.clementlevallois.importers.model.ImagesPerFile;
 import net.clementlevallois.importers.model.SheetModel;
 import net.clementlevallois.nocodeimportwebservices.APIController;
 import static net.clementlevallois.nocodeimportwebservices.APIController.increment;
+import net.clementlevallois.nocodeimportwebservices.SynchronizedFileWrite;
 
 /**
  *
@@ -55,6 +59,45 @@ public class ImportPdfEndPoints {
             ctx.result(byteArray).status(HttpURLConnection.HTTP_OK);
         });
 
+        app.get("/api/import/pdf/simpleLines", ctx -> {
+            increment();
+            String fileName = ctx.queryParam("fileName");
+            String uniqueFileId = ctx.queryParam("uniqueFileId");
+            String dataPersistenceId = ctx.queryParam("dataPersistenceId");
+
+            Path tempDataPath = Path.of(APIController.tempFilesFolder.toString(), dataPersistenceId + uniqueFileId);
+            if (Files.exists(tempDataPath)) {
+                InputStream is = new FileInputStream(tempDataPath.toFile());
+                PdfImporter pdfImporter = new PdfImporter();
+
+                List<SheetModel> sheets = pdfImporter.importPdfFile(is, fileName, "");
+                StringBuilder sb = new StringBuilder();
+                for (SheetModel sm : sheets) {
+                    List<CellRecord> cellRecords = sm.getColumnIndexToCellRecords().get(0);
+                    if (cellRecords == null) {
+                        break;
+                    }
+                    for (CellRecord cr : cellRecords) {
+                        String line = cr.getRawValue();
+                        if (line != null && !line.isBlank() && line.trim().contains(" ")) {
+                            sb.append(cr.getRawValue()).append("\n");
+                        }
+                    }
+                }
+                Path fullPathForFileContainingTextInput = Path.of(APIController.tempFilesFolder.toString(), dataPersistenceId);
+                if (Files.notExists(fullPathForFileContainingTextInput)) {
+                    Files.createFile(fullPathForFileContainingTextInput);
+                }
+                SynchronizedFileWrite.concurrentWriting(fullPathForFileContainingTextInput, sb.toString());
+                is.close();
+                Files.deleteIfExists(tempDataPath);
+                ctx.result("ok").status(HttpURLConnection.HTTP_OK);
+            } else {
+                ctx.result("pdf import simple lines API endpoint: file not found").status(HttpURLConnection.HTTP_BAD_REQUEST);
+            }
+
+        });
+
         app.post("/api/import/pdf/return-png", ctx -> {
             increment();
             byte[] bodyAsBytes = ctx.bodyAsBytes();
@@ -71,9 +114,12 @@ public class ImportPdfEndPoints {
         });
 
         app.post("/api/import/pdf/extract-region", ctx -> {
-            increment();
             JsonObjectBuilder objectBuilder = Json.createObjectBuilder();
-            NaiveRateLimit.requestPerTimeUnit(ctx, 50, TimeUnit.SECONDS);
+            String owner = ctx.queryParam("owner");
+            if (owner == null || !owner.equals(APIController.pwdOwner)) {
+                NaiveRateLimit.requestPerTimeUnit(ctx, 50, TimeUnit.SECONDS);
+                increment();
+            }
             byte[] pdfAsBytes = null;
             String fileName = null;
             boolean allPages = false;

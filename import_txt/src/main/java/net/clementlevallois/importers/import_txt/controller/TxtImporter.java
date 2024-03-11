@@ -1,15 +1,14 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Project/Maven2/JavaApp/src/main/java/${packagePath}/${mainClassName}.java to edit this template
- */
 package net.clementlevallois.importers.import_txt.controller;
 
+import com.sigpwned.chardet4j.Chardet;
 import com.univocity.parsers.csv.CsvParser;
 import com.univocity.parsers.csv.CsvParserSettings;
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -32,19 +31,20 @@ public class TxtImporter {
         System.out.println("Hello World!");
     }
 
-    public List<SheetModel> importTextFile(InputStream is, String fileName, String functionName, String gazeOption) {
+    public List<SheetModel> importTextFile(byte[] bytes, String fileName, String functionName, String gazeOption) {
         Map<Integer, String> lines = new TreeMap();
         List<SheetModel> sheets = new ArrayList();
+        ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(bytes);
         try {
 
             // if we are computing cooccurrences, we need the lines of text to be decomposed as a csv file.
+            // this should really be handled by the csv importer we have elsewhere, but the .txt file extension file of the user has led us here...
             if (functionName.equals("gaze") && gazeOption.equals("1")) {
                 CsvParserSettings settings = new CsvParserSettings();
                 settings.detectFormatAutomatically();
                 settings.setMaxCharsPerColumn(-1);
                 CsvParser parser = new CsvParser(settings);
-                InputStreamReader reader;
-                reader = new InputStreamReader(is, StandardCharsets.UTF_8);
+                Reader reader = Chardet.decode(byteArrayInputStream, StandardCharsets.UTF_8);
                 List<String[]> rows = parser.parseAll(reader);
                 SheetModel sheetModel = new SheetModel();
                 sheetModel.setName(fileName);
@@ -53,6 +53,9 @@ public class TxtImporter {
                 String[] firstLine = rows.get(0);
                 int h = 0;
                 for (String header : firstLine) {
+                    if (header == null) {
+                        header = "";
+                    }
                     header = Jsoup.clean(header, Safelist.basicWithImages().addAttributes("span", "style"));
                     cm = new ColumnModel(String.valueOf(h++), header.trim());
                     headerNames.add(cm);
@@ -63,6 +66,9 @@ public class TxtImporter {
                 for (String[] row : rows) {
                     int i = 0;
                     for (String field : row) {
+                        if (field == null) {
+                            field = "";
+                        }
                         field = Jsoup.clean(field, Safelist.basicWithImages().addAttributes("span", "style"));
                         CellRecord cellRecord = new CellRecord(j, i++, field.trim());
                         sheetModel.addCellRecord(cellRecord);
@@ -71,15 +77,18 @@ public class TxtImporter {
                 }
                 sheets.add(sheetModel);
 
-
             } // normal case of importing text as flat lines without caring for cooccurrences
             else {
                 List<String> txtLines;
-                BufferedReader br = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
-                txtLines = br.lines().collect(toList());
-                br.close();
+                Reader chars = Chardet.decode(byteArrayInputStream, StandardCharsets.UTF_8);
+                try (BufferedReader br = new BufferedReader(chars)) {
+                    txtLines = br.lines().collect(toList());
+                }
                 int i = 0;
                 for (String line : txtLines) {
+                    if (line == null) {
+                        line = "";
+                    }
                     line = Jsoup.clean(line, Safelist.basicWithImages().addAttributes("span", "style"));
                     lines.put(i++, line);
                 }
@@ -97,7 +106,7 @@ public class TxtImporter {
                 sheets.add(sheetModel);
             }
         } catch (IOException ex) {
-            System.out.println("exception: "+ ex.getMessage());
+            System.out.println("exception: " + ex.getMessage());
         }
         return sheets;
     }

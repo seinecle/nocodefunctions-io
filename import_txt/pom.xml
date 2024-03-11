@@ -15,7 +15,6 @@
         <dependency>
             <groupId>net.clementlevallois.io</groupId>
             <artifactId>io-model</artifactId>
-            <version>1.0</version>            
         </dependency>
         <!-- https://mvnrepository.com/artifact/com.univocity/univocity-parsers -->
         <dependency>
@@ -26,6 +25,11 @@
             <!--jsoup HTML parser library @ https://jsoup.org/--> 
             <groupId>org.jsoup</groupId>
             <artifactId>jsoup</artifactId>
+        </dependency>
+        <!--Charset detector-->
+        <dependency>
+            <groupId>com.sigpwned</groupId>
+            <artifactId>chardet4j</artifactId>
         </dependency>
     </dependencies>
 </project>

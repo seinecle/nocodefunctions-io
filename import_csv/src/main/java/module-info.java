@@ -8,6 +8,7 @@ module net.clementlevallois.importers.import_csv {
     requires net.clementlevallois.io.model;
     requires univocity.parsers;
     requires org.jsoup;
+    requires chardet4j;
             
     exports net.clementlevallois.importers.import_csv.controller;
 

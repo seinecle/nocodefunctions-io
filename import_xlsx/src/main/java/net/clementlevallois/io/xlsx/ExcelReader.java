@@ -157,12 +157,19 @@ public class ExcelReader {
 
         switch (cellType) {
             case NUMERIC -> {
-                double doubleVal = cell.getNumericCellValue();
-                if (doubleVal == (int) doubleVal) {
-                    int value = Double.valueOf(doubleVal).intValue();
-                    return String.valueOf(value);
-                } else {
-                    return String.valueOf(doubleVal);
+                try {
+                    double doubleVal = cell.getNumericCellValue();
+                    if (doubleVal == (int) doubleVal) {
+                        int value = Double.valueOf(doubleVal).intValue();
+                        return String.valueOf(value);
+                    } else {
+                        return String.valueOf(doubleVal);
+                    }
+                } catch (java.lang.NumberFormatException e) {
+                    System.out.println("error reading double value in cell");
+                    System.out.println("error: " + e.getMessage());
+                    System.out.println("returning 0");
+                    return "0";
                 }
             }
             case STRING -> {

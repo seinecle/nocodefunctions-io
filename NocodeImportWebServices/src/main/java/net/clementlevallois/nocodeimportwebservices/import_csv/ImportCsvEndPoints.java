@@ -33,10 +33,8 @@ public class ImportCsvEndPoints {
             String fileName = ctx.queryParam("fileName");
             String functionName = ctx.queryParam("functionName");
             String gazeOption = ctx.queryParam("gazeOption");
-
-            InputStream is = new ByteArrayInputStream(bodyAsBytes);
             CsvImporter csvImporter = new CsvImporter();
-            List<SheetModel> sheets = csvImporter.importCsvFile(is, fileName, functionName, gazeOption);
+            List<SheetModel> sheets = csvImporter.importCsvFile(bodyAsBytes, fileName, functionName, gazeOption);
             
             byte[] byteArray = APIController.byteArraySerializerForSheets(sheets);
 

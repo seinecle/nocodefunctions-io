@@ -17,7 +17,7 @@ import java.util.logging.Logger;
 import net.clementlevallois.functions.model.Occurrence;
 import net.clementlevallois.importers.model.CellRecord;
 import net.clementlevallois.importers.model.SheetModel;
-import net.clementlevallois.umigon.model.Document;
+import net.clementlevallois.umigon.model.classification.Document;
 import net.clementlevallois.utils.Multiset;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
@@ -218,7 +218,7 @@ public class ExcelSaver {
                 continue;
             }
             String organic;
-            if (doc.getCategorizationResult().toString().startsWith("_061")) {
+            if (doc.getCategoryCode().startsWith("_61")) {
                 organic = "📢 " + localeBundle.getString("organic.general.soundspromoted");
             } else {
                 organic = "🌿 " + localeBundle.getString("organic.general.soundsorganic");
