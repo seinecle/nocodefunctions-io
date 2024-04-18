@@ -27,7 +27,7 @@ public class SynchronizedFileWrite {
                 // The lock is released when try-with-resources block exits
             }
         } catch (IOException e) {
-            System.out.println("error in the concurrent write to file in pdf API");
+            System.out.println("error in the concurrent write to file in one import API endpoint");
         }
 
     }

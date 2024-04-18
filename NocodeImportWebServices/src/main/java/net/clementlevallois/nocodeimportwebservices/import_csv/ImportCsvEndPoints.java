@@ -6,8 +6,6 @@
 package net.clementlevallois.nocodeimportwebservices.import_csv;
 
 import io.javalin.Javalin;
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.util.List;
 import net.clementlevallois.importers.import_csv.controller.CsvImporter;

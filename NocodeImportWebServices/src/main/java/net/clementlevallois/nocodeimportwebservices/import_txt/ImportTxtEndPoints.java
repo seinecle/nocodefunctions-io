@@ -6,9 +6,6 @@
 package net.clementlevallois.nocodeimportwebservices.import_txt;
 
 import io.javalin.Javalin;
-import java.io.ByteArrayInputStream;
-import java.io.FileInputStream;
-import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.nio.file.Files;
 import java.nio.file.Path;

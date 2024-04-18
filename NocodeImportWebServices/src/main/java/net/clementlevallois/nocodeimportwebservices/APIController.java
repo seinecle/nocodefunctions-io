@@ -25,6 +25,8 @@ import java.util.logging.Logger;
 import net.clementlevallois.importers.model.SheetModel;
 import net.clementlevallois.nocodeimportwebservices.export_xlsx.ExportXlsEndPoints;
 import net.clementlevallois.nocodeimportwebservices.import_csv.ImportCsvEndPoints;
+import net.clementlevallois.nocodeimportwebservices.import_html.ImportHtmlEndPoints;
+import net.clementlevallois.nocodeimportwebservices.import_json.ImportJsonEndPoints;
 import net.clementlevallois.nocodeimportwebservices.import_pdf.ImportPdfEndPoints;
 import net.clementlevallois.nocodeimportwebservices.import_txt.ImportTxtEndPoints;
 import net.clementlevallois.nocodeimportwebservices.import_xlsx.ImportXlsEndPoints;
@@ -61,8 +63,10 @@ public class APIController {
         pwdOwner = props.getProperty("pwdOwner");
         app = ImportCsvEndPoints.addAll(app);
         app = ImportTxtEndPoints.addAll(app);
+        app = ImportJsonEndPoints.addAll(app);
         app = ImportPdfEndPoints.addAll(app);
         app = ImportXlsEndPoints.addAll(app);
+        app = ImportHtmlEndPoints.addAll(app);
         app = ExportXlsEndPoints.addAll(app);
         System.out.println("running the api");
 
@@ -72,7 +76,7 @@ public class APIController {
         Long epochdays = LocalDate.now().toEpochDay();
         String message = epochdays.toString() + "\n";
         try {
-            Files.write(Paths.get("api_calls.txt"), message.getBytes(), StandardOpenOption.APPEND);
+            Files.write(Paths.get("api_calls.txt"), message.getBytes(), StandardOpenOption.CREATE, StandardOpenOption.APPEND);
         } catch (IOException e) {
             System.out.println("issue with the api call counter");
             System.out.println(e.getMessage());

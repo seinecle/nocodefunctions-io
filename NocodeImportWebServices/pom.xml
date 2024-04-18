@@ -58,6 +58,16 @@
         </dependency>
         <dependency>
             <groupId>net.clementlevallois.io</groupId>
+            <artifactId>io_html</artifactId>
+            <version>1.0</version>
+        </dependency>
+        <dependency>
+            <groupId>net.clementlevallois.io</groupId>
+            <artifactId>io_json</artifactId>
+            <version>1.0</version>
+        </dependency>
+        <dependency>
+            <groupId>net.clementlevallois.io</groupId>
             <artifactId>io_pdf</artifactId>
             <version>1.0</version>
         </dependency>
