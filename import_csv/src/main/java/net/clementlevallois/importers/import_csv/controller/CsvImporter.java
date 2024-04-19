@@ -30,9 +30,9 @@ public class CsvImporter {
     }
 
     public List<SheetModel> importCsvFile(byte[] bytes, String fileName, String functionName, String gazeOption) {
+        List<SheetModel> sheets = new ArrayList();
         Reader reader = null;
         try {
-            List<SheetModel> sheets = new ArrayList();
             CsvParserSettings settings = new CsvParserSettings();
             settings.detectFormatAutomatically();
             settings.setMaxCharsPerColumn(-1);
@@ -80,14 +80,16 @@ public class CsvImporter {
             parser.stopParsing();
             return sheets;
         } catch (IOException ex) {
-            ex.printStackTrace();
+            System.out.println("error when reading csv file");
+            System.out.println(ex.getMessage());
         } finally {
             try {
                 reader.close();
             } catch (IOException ex) {
-                ex.printStackTrace();
+                System.out.println("error when closing csv file at the reading stage");
+                System.out.println(ex.getMessage());
             }
         }
-        return null;
+        return sheets;
     }
 }

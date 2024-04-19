@@ -13,7 +13,10 @@ import java.io.ByteArrayInputStream;
 import java.net.HttpURLConnection;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 import net.clementlevallois.io.io_html.HtmlImporter;
 import net.clementlevallois.nocodeimportwebservices.APIController;
 import static net.clementlevallois.nocodeimportwebservices.APIController.increment;
@@ -30,12 +33,27 @@ public class ImportHtmlEndPoints {
         app.get("/api/import/html/getLinksContainedInPage", ctx -> {
             increment();
             String url = Optional.ofNullable(ctx.queryParam("url")).orElse("none");
-            if (!url.equals("none")) {
+            if (!url.isBlank() && !url.equals("none")) {
                 HtmlImporter htmlImporter = new HtmlImporter();
                 String simpleLines = htmlImporter.importHtmlPageToListOfUrls(url);
                 ctx.result(simpleLines).status(HttpURLConnection.HTTP_OK);
             } else {
                 ctx.result("html extract links from html page import API endpoint: url not included in params").status(HttpURLConnection.HTTP_BAD_REQUEST);
+            }
+        });
+
+        app.get("/api/import/html/getPagesContainedInWebsite", ctx -> {
+            increment();
+            String url = Optional.ofNullable(ctx.queryParam("url")).orElse("none");
+            int maxUrls = Integer.parseInt(Optional.ofNullable(ctx.queryParam("maxUrls")).orElse("30"));
+            String commaSeparatedListOfExclusionTerms = Optional.ofNullable(ctx.queryParam("exclusionTerms")).orElse("");
+            Set<String> exclusionTerms = Arrays.stream(commaSeparatedListOfExclusionTerms.split(",")).map(String::trim).collect(Collectors.toSet());
+            if (!url.isBlank() && !url.equals("none")) {
+                HtmlImporter htmlImporter = new HtmlImporter();
+                String simpleLines = htmlImporter.importWebsiteToListOfUrls(url, maxUrls, exclusionTerms);
+                ctx.result(simpleLines).status(HttpURLConnection.HTTP_OK);
+            } else {
+                ctx.result("html crawl pages in website import API endpoint: url not included in params").status(HttpURLConnection.HTTP_BAD_REQUEST);
             }
         });
 

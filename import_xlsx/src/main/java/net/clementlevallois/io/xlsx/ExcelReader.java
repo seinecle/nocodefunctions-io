@@ -11,6 +11,7 @@
 package net.clementlevallois.io.xlsx;
 
 import com.monitorjbl.xlsx.StreamingReader;
+import java.io.ByteArrayInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -64,9 +65,15 @@ public class ExcelReader {
         }
     }
 
-    public static List<SheetModel> readExcelFile(InputStream is, String gazeOption, String separator) throws FileNotFoundException, IOException {
+    public static List<SheetModel> readExcelFile(byte[] bytes, String gazeOption, String separator) throws FileNotFoundException, IOException {
 
         List<SheetModel> sheets = new ArrayList();
+
+        if (bytes == null || bytes.length == 0) {
+            return sheets;
+        }
+
+        InputStream is = new ByteArrayInputStream(bytes);
 
         try (Workbook wb = StreamingReader.builder()
                 .rowCacheSize(100) // number of rows to keep in memory (defaults to 10)

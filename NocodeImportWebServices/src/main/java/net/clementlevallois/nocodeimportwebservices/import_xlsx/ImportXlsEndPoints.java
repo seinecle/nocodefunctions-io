@@ -31,12 +31,14 @@ public class ImportXlsEndPoints {
             increment();
             byte[] bodyAsBytes = ctx.bodyAsBytes();
 
+            if (bodyAsBytes.length == 0) {
+                ctx.result("error excel file was null in excel importer API endpoint").status(HttpURLConnection.HTTP_BAD_REQUEST);
+            }
+
             String gazeOption = Objects.requireNonNullElse(ctx.queryParam("gaze_option"), "none");
             String separator = Objects.requireNonNullElse(ctx.queryParam("separator"), ",");
 
-            InputStream is = new ByteArrayInputStream(bodyAsBytes);
-
-            List<SheetModel> listsOfSheets = ExcelReader.readExcelFile(is, gazeOption, separator);
+            List<SheetModel> listsOfSheets = ExcelReader.readExcelFile(bodyAsBytes, gazeOption, separator);
 
             byte[] byteArray = APIController.byteArraySerializerForSheets(listsOfSheets);
 
