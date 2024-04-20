@@ -102,6 +102,8 @@ public class HtmlImporter {
                     .thread(threads)
                     .setScheduler(new QueueScheduler()
                             .setDuplicateRemover(new BloomFilterDuplicateRemover(10000000))); // Ensure breadth-first search
+            
+            
             crawler.setSpider(spider);
             spider.run();
 

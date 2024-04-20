@@ -17,7 +17,7 @@ import us.codecraft.webmagic.scheduler.BloomFilterDuplicateRemover;
 
 public class SimpleWebCrawler implements PageProcessor {
 
-    private final Site site = Site.me().setRetryTimes(3).setSleepTime(100).setUseGzip(true);
+    private final Site site = Site.me().setRetryTimes(3).setSleepTime(100).setUseGzip(true).setUserAgent("nocode functions crawler/1.0");
     private final Set<String> urls = new HashSet();
     private final String domain;
     private final Set<String> exclusionTerms;
@@ -33,38 +33,51 @@ public class SimpleWebCrawler implements PageProcessor {
 
     @Override
     public void process(Page page) {
-        List<String> targetUrlsAslist = page.getHtml().links().regex(domain + ".*\\.htm.*").all();
-        Set<String> targetUrls = targetUrlsAslist.stream()
-                .filter(url -> exclusionTerms.stream().filter(s -> !s.isBlank()).noneMatch(url::contains))
-                .collect(Collectors.toSet());
+        // Namespace for XML sitemap index
+        String namespace = "http://www.sitemaps.org/schemas/sitemap/0.9";
 
-        if (page.getUrl().regex(domain + ".*").match()) {
-            if (page.getUrl().regex(".*/sitemap\\.xml").match()) {
-                for (String url : targetUrls) {
-                    if (count < maxUrls) {
-                        if (urls.add(url)) {
-                            count++;
-                        }
-                        page.addTargetRequests(targetUrls);
-                    } else {
-                        spider.stop();
-                        break;
-                    }
-                }
-            } else {
-                urls.add(page.getUrl().toString());
-                for (String url : targetUrls) {
-                    if (count < maxUrls) {
-                        if (urls.add(url)) {
-                            count++;
-                        }
-                        page.addTargetRequests(targetUrls);
-                    } else {
-                        spider.stop();
-                        break;
-                    }
+        if (page.getUrl().regex(".*sitemap.*\\.xml$").match()) {
+            // Process sitemap.xml or any similar XML file (like page-sitemap.xml, post-sitemap.xml)
+            List<String> sitemapUrls = page.getHtml().links().all();
+            if (sitemapUrls.isEmpty()) {
+                // Alternative XPath to handle different sitemap structures
+                sitemapUrls = page.getHtml().xpath("//url/loc/text()").all();
+            }
+            if (sitemapUrls.isEmpty()) {
+                // Alternative XPath to handle different sitemap structures
+                sitemapUrls = page.getHtml().xpath("//sitemapindex/sitemap/loc/text()").all();
+            }
+            if (sitemapUrls.isEmpty()) {
+                // Check for alternative structure or incorrect namespace handling
+                sitemapUrls = page.getHtml().xpath("//*[local-name()='sitemap']/*[local-name()='loc']/text()").all();
+            }
+            for (String url : sitemapUrls) {
+                if (url.matches(".*sitemap.*\\.xml$")) {
+                    // If the URL is another sitemap, add it to the spider's queue for further processing
+                    spider.addUrl(url);
+                } else {
+                    // If the URL is a regular target URL, process it as usual
+                    addUrlToProcess(url);
                 }
             }
+        } else {
+            // Process normal pages
+            List<String> targetUrls = page.getHtml().links().regex(domain + ".*\\.htm.*").all();
+            for (String url : targetUrls.stream()
+                    .filter(url -> exclusionTerms.stream().filter(term -> !term.isBlank()).allMatch(term -> !url.contains(term)))
+                    .collect(Collectors.toSet())) {
+                addUrlToProcess(url);
+            }
+        }
+    }
+
+    private void addUrlToProcess(String url) {
+        if (count < maxUrls && urls.add(url)) {
+            count++;
+            spider.addUrl(url); // Queue next URL for the spider to process
+        }
+        if (count >= maxUrls) {
+            spider.stop(); // Stop the spider when max URLs count is reached
         }
     }
 
