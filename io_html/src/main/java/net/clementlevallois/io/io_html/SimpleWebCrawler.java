@@ -16,8 +16,8 @@ import java.util.stream.Collectors;
 import us.codecraft.webmagic.scheduler.BloomFilterDuplicateRemover;
 
 public class SimpleWebCrawler implements PageProcessor {
-
-    private final Site site = Site.me().setRetryTimes(3).setSleepTime(100).setUseGzip(true).setUserAgent("nocode functions crawler/1.0");
+    private final String userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64), this is a crawler, AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36";
+    private final Site site = Site.me().setRetryTimes(3).setSleepTime(100).setUseGzip(true).setUserAgent(userAgent);
     private final Set<String> urls = new HashSet();
     private final String domain;
     private final Set<String> exclusionTerms;

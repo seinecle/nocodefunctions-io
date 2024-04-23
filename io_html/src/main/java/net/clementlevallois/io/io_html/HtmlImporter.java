@@ -20,12 +20,15 @@ import us.codecraft.webmagic.scheduler.QueueScheduler;
  */
 public class HtmlImporter {
 
+    private final String userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64), this is a crawler, AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36";
+
     public static void main(String[] args) throws IOException {
-        String urlExample = "https://clementlevallois.net";
+        String urlExample = "https://viewfindr.net/";
         HtmlImporter importer = new HtmlImporter();
         String rawText = importer.importHtmlPageToSimpleLines(urlExample);
         System.out.println("raw text:");
         System.out.println(rawText);
+
     }
 
     public String importHtmlPageToSimpleLines(String urlParam) {
@@ -35,7 +38,9 @@ public class HtmlImporter {
         }
         String text = "";
         try {
-            Document doc = Jsoup.connect(urlParam).get();
+            Document doc = Jsoup
+                    .connect(urlParam)
+                    .userAgent(userAgent).get();
 
             // Remove unwanted elements by selectors, including all <a> tags
             doc.select("div.advertisement, footer, .sidebar").remove();
@@ -64,9 +69,15 @@ public class HtmlImporter {
     }
 
     public String importHtmlPageToListOfUrls(String urlParam) {
+        if (!urlParam.startsWith("http")) {
+            urlParam = "https://" + urlParam;
+        }
         JsonArrayBuilder jsonArrayBuilder = Json.createArrayBuilder();
         try {
-            Document doc = Jsoup.connect(urlParam).get();
+            Document doc = Jsoup
+                    .connect(urlParam)
+                    .userAgent(userAgent)
+                    .get();
 
             // Select all links within the document
             Elements links = doc.select("a[href]");
@@ -102,8 +113,7 @@ public class HtmlImporter {
                     .thread(threads)
                     .setScheduler(new QueueScheduler()
                             .setDuplicateRemover(new BloomFilterDuplicateRemover(10000000))); // Ensure breadth-first search
-            
-            
+
             crawler.setSpider(spider);
             spider.run();
 
