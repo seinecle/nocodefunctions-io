@@ -7,7 +7,7 @@ package net.clementlevallois.io.xlsx.tests;
 import java.util.List;
 import net.clementlevallois.io.xlsx.ExcelSaver;
 import net.clementlevallois.umigon.model.classification.Document;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  *
