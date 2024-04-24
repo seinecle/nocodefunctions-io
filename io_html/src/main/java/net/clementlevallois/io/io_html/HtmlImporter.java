@@ -6,6 +6,7 @@ import jakarta.json.JsonObjectBuilder;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
+import static java.util.stream.Collectors.toSet;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -99,6 +100,7 @@ public class HtmlImporter {
     }
 
     public String importWebsiteToListOfUrls(String domaineName, int maxUrl, Set<String> exclusionTerms) {
+        exclusionTerms = exclusionTerms.stream().filter(term -> term != null && !term.isBlank()).collect(toSet());
         Set<String> urls = new HashSet();
         if (!domaineName.startsWith("http")) {
             domaineName = "https://" + domaineName;
