@@ -3,6 +3,7 @@
  */
 package net.clementlevallois.io.io_html;
 
+import java.time.Duration;
 import us.codecraft.webmagic.Page;
 import us.codecraft.webmagic.Site;
 import us.codecraft.webmagic.Spider;
@@ -12,9 +13,15 @@ import us.codecraft.webmagic.scheduler.QueueScheduler;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
+import org.openqa.selenium.By;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeOptions;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
 import us.codecraft.webmagic.scheduler.BloomFilterDuplicateRemover;
 
 public class SimpleWebCrawler implements PageProcessor {
@@ -65,8 +72,42 @@ public class SimpleWebCrawler implements PageProcessor {
             }
         } else {
             // Process normal pages
+
             Set<String> allLinks = new HashSet(page.getHtml().links().all());
-            String regex = ".*\\.(jpg|jpeg|png|gif|bmp|tiff|tif|svg|webp|heic|jif|jpe|jfif|pdf)";
+            if (allLinks.isEmpty()) {
+                // Configure Chrome to run in headless mode
+                ChromeOptions options = new ChromeOptions();
+                options.addArguments("--headless");
+
+                // Initialize WebDriver
+                WebDriver driver = new ChromeDriver(options);
+
+                System.out.println("page: " + page.getRequest().getUrl());
+
+                // Fetch the page
+                driver.get(page.getRequest().getUrl());  // Replace with the actual URL
+
+                WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10)); // wait for a maximum of 10 seconds
+
+                // Waiting for a specific element to ensure the page has loaded
+                wait.until(ExpectedConditions.visibilityOfElementLocated(By.cssSelector("nav.main_nav")));
+                try {
+                    // Let the page load completely, adjust time as necessary
+                    TimeUnit.SECONDS.sleep(5);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+
+                // Extract hrefs after confirming page load
+                List<WebElement> links = driver.findElements(By.xpath("//a[@href]"));
+                for (WebElement link : links) {
+                    allLinks.add(link.getAttribute("href"));
+                }
+                // Clean up
+                driver.quit();
+            }
+
+            String regex = ".*\\.(jpg|jpeg|png|gif|bmp|tiff|tif|svg|webp|heic|jif|jpe|jfif|pdf|zip|exe|deb|dmg)";
 
             Predicate<String> isExcluded = url -> {
                 if (url == null || !url.contains(domain) || url.matches(regex)) {
@@ -82,6 +123,9 @@ public class SimpleWebCrawler implements PageProcessor {
             };
             Set<String> urlsAfterFilter = new HashSet<>();
             for (String url : allLinks) {
+                if (url.startsWith("/")) {
+                    url = domain + url;
+                }
                 // If the URL doesn't meet the exclusion criteria, add it to the set
                 if (!isExcluded.test(url)) {
                     urlsAfterFilter.add(url); // Add to the set if the predicate is false

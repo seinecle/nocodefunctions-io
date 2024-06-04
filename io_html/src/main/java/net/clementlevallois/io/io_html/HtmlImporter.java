@@ -46,7 +46,7 @@ public class HtmlImporter {
             // Remove unwanted elements by selectors, including all <a> tags
             doc.select("div.advertisement, footer, .sidebar").remove();
 
-            doc.select("*[class*='menu'], *[class*='logo'], *[class*='-toc']").not("html, body, p").remove();
+            doc.select("*[class*='menu'], *[class*='logo'], *[class*='-toc']").not("html, header, body, p").remove();
 
             // Add a line break after the text of every element
             addLineBreaksToAllElements(doc);
@@ -73,6 +73,10 @@ public class HtmlImporter {
         if (!urlParam.startsWith("http")) {
             urlParam = "https://" + urlParam;
         }
+        if (urlParam.endsWith("/")) {
+            urlParam = urlParam.substring(0, urlParam.length() - 1);
+        }
+
         JsonArrayBuilder jsonArrayBuilder = Json.createArrayBuilder();
         try {
             Document doc = Jsoup
