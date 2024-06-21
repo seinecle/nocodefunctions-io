@@ -19,6 +19,8 @@ import java.util.logging.Logger;
 import net.clementlevallois.importers.model.CellRecord;
 import net.clementlevallois.importers.model.ColumnModel;
 import net.clementlevallois.importers.model.SheetModel;
+import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.io.RandomAccessReadBuffer;
 import org.apache.pdfbox.multipdf.PageExtractor;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
@@ -35,9 +37,8 @@ public class PdfImporter {
 
         SheetModel sheetModel = new SheetModel();
         sheetModel.setName(fileName);
+        try (PDDocument doc = Loader.loadPDF(new RandomAccessReadBuffer(is))) {
 
-        try {
-            PDDocument doc = PDDocument.load(is);
             PDFTextStripper pdfTextStripper = new PDFTextStripper();
             PageExtractor pageExtractor;
 

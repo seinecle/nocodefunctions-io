@@ -20,6 +20,8 @@ import java.util.logging.Logger;
 import net.clementlevallois.importers.model.CellRecord;
 import net.clementlevallois.importers.model.ColumnModel;
 import net.clementlevallois.importers.model.SheetModel;
+import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.io.RandomAccessReadBuffer;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.text.PDFTextStripperByArea;
@@ -38,8 +40,7 @@ public class PdfExtractorByRegion {
         SheetModel sheetModel = new SheetModel();
         sheetModel.setName(fileName);
 
-        try {
-            PDDocument doc = PDDocument.load(is);
+        try (PDDocument doc = Loader.loadPDF(new RandomAccessReadBuffer(is))) {
             int docPagesCount = doc.getPages().getCount();
             if (!allPages && selectedPage > docPagesCount) {
                 CellRecord cellRecord = new CellRecord(0, 0, "selected page is higher than the count of pages in the doc");

@@ -69,18 +69,18 @@ public class ImportPdfEndPoints {
             if (Files.exists(tempDataPath)) {
                 InputStream is = new FileInputStream(tempDataPath.toFile());
                 PdfImporter pdfImporter = new PdfImporter();
-
                 List<SheetModel> sheets = pdfImporter.importPdfFile(is, fileName, "");
                 StringBuilder sb = new StringBuilder();
                 for (SheetModel sm : sheets) {
                     List<CellRecord> cellRecords = sm.getColumnIndexToCellRecords().get(0);
-                    if (cellRecords == null) {
-                        break;
-                    }
-                    for (CellRecord cr : cellRecords) {
-                        String line = cr.getRawValue();
-                        if (line != null && !line.isBlank() && line.trim().contains(" ")) {
-                            sb.append(cr.getRawValue()).append("\n");
+                    if (cellRecords == null || cellRecords.isEmpty()) {
+                        ctx.result("reading the pdf file returned no text: app error or wrong file?").status(HttpURLConnection.HTTP_BAD_REQUEST);
+                    } else {
+                        for (CellRecord cr : cellRecords) {
+                            String line = cr.getRawValue();
+                            if (line != null && !line.isBlank() && line.trim().contains(" ")) {
+                                sb.append(cr.getRawValue()).append("\n");
+                            }
                         }
                     }
                 }
