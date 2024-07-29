@@ -20,12 +20,13 @@
     </properties>
       
     <modules>
-        <module>import_txt</module>
-        <module>import_csv</module>
-        <module>import_xlsx</module>
-        <module>DataImportModel</module>
+        <module>io_txt</module>
+        <module>io_csv</module>
+        <module>io_xlsx</module>
+        <module>io_model</module>
         <module>NocodeImportWebServices</module>
         <module>io_json</module>
+        <module>io_pdf</module>
         <module>io_html</module>
     </modules>
     
