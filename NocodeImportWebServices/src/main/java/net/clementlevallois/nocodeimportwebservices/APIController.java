@@ -54,6 +54,13 @@ public class APIController {
         } else {
             tempFilesFolder = Path.of(props.getProperty("pathToTempFilesLinux"));
         }
+        
+        if (!Files.isDirectory(tempFilesFolder)){
+            System.out.println("temp folder in private.properties file does not exist:");
+            System.out.println(tempFilesFolder);
+            System.out.println("exiting now");
+            System.exit(-1);
+        }
 
         String port = props.getProperty("port");
         app = Javalin.create(config -> {

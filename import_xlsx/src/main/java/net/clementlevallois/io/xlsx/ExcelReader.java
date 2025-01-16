@@ -155,6 +155,8 @@ public class ExcelReader {
                 }
                 sheets.add(sheetModel);
             }
+        } catch (Exception e){
+            return sheets;
         }
         return sheets;
     }
@@ -183,7 +185,12 @@ public class ExcelReader {
                 return cell.getStringCellValue();
             }
             case ERROR -> {
-                return String.valueOf(cell.getErrorCellValue());
+                try {
+                    return String.valueOf(cell.getErrorCellValue());
+                } catch (Exception e) {
+                    // Return a placeholder for error cells
+                    return "#ERROR";
+                }
             }
             case BLANK -> {
                 return "";

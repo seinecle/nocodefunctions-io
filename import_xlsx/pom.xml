@@ -16,7 +16,8 @@
     <dependencies>
         <dependency>
             <groupId>net.clementlevallois.io</groupId>
-            <artifactId>io-model</artifactId>
+            <artifactId>io_model</artifactId>
+            <version>1.0</version>
         </dependency>
         <dependency>
             <groupId>net.clementlevallois.functions</groupId>

@@ -34,6 +34,8 @@ public class HtmlImporter {
 
     public String importHtmlPageToSimpleLines(String urlParam) {
 
+        urlParam = urlParam.trim();
+
         if (!urlParam.startsWith("http")) {
             urlParam = "https://" + urlParam;
         }
