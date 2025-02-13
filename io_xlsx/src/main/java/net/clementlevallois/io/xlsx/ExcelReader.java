@@ -183,7 +183,8 @@ public class ExcelReader {
                 return cell.getStringCellValue();
             }
             case ERROR -> {
-                return String.valueOf(cell.getErrorCellValue());
+                byte errorCellValue = cell.getErrorCellValue();
+                return Character.toString((char) errorCellValue);
             }
             case BLANK -> {
                 return "";

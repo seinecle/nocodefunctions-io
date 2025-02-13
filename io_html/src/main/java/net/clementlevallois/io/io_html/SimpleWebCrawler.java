@@ -18,6 +18,8 @@ import java.util.Set;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
@@ -43,6 +45,13 @@ public class SimpleWebCrawler implements PageProcessor {
 
     // Semaphore to limit concurrent WebDriver instances
     private static final Semaphore webDriverSemaphore = new Semaphore(50); // Adjust limit as needed
+    
+    static {
+        // Configure WebMagic logging
+        Logger webmagicLogger = Logger.getLogger("us.codecraft.webmagic");
+        webmagicLogger.setLevel(Level.SEVERE);  // This will hide INFO messages
+    }
+
 
     public SimpleWebCrawler(String domain, Set<String> exclusionTerms, int maxUrls) {
         this.domain = domain;

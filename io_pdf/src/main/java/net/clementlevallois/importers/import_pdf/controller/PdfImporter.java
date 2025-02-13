@@ -30,6 +30,16 @@ import org.apache.pdfbox.text.PDFTextStripper;
  * @author LEVALLOIS
  */
 public class PdfImporter {
+    
+    static {
+        // Configure logging levels
+        Logger pdfboxLogger = Logger.getLogger("org.apache.pdfbox");
+        pdfboxLogger.setLevel(Level.SEVERE);
+        
+        // Specifically for the Splitter if needed
+        Logger splitterLogger = Logger.getLogger("org.apache.pdfbox.multipdf");
+        splitterLogger.setLevel(Level.SEVERE);
+    }
 
     public List<SheetModel> importPdfFile(InputStream is, String fileName, String localizedEmptyLineMessage) {
         Map<Integer, String> lines = new TreeMap();

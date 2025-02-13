@@ -33,6 +33,16 @@ import org.jsoup.safety.Safelist;
  * @author LEVALLOIS
  */
 public class PdfExtractorByRegion {
+    
+    static {
+        // Configure logging levels
+        Logger pdfboxLogger = Logger.getLogger("org.apache.pdfbox");
+        pdfboxLogger.setLevel(Level.SEVERE);
+        
+        // Specifically for the Splitter if needed
+        Logger splitterLogger = Logger.getLogger("org.apache.pdfbox.multipdf");
+        splitterLogger.setLevel(Level.SEVERE);
+    }
 
     public SheetModel extractTextFromRegionInPdf(InputStream is, String fileName, Boolean allPages, Integer selectedPage, Float topLeftX, Float topLeftY, Float width, Float height) {
         Map<Integer, String> textPerPage = new TreeMap();
