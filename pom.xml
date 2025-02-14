@@ -17,6 +17,7 @@
         <maven.compiler.target>17</maven.compiler.target>
         <gephi.version>0.9.7</gephi.version>
         <netbeans.version>RELEASE140</netbeans.version>
+        <webmagic.version>0.10.13</webmagic.version>
     </properties>
       
     <modules>
@@ -40,12 +41,12 @@
             <dependency>
                 <groupId>us.codecraft</groupId>
                 <artifactId>webmagic-core</artifactId>
-                <version>0.10.0</version>
+                <version>0.10.3</version>
             </dependency>
             <dependency>
                 <groupId>us.codecraft</groupId>
                 <artifactId>webmagic-extension</artifactId>
-                <version>0.10.0</version>
+                <version>0.10.3</version>
             </dependency>            
             <dependency>
                 <groupId>com.univocity</groupId>

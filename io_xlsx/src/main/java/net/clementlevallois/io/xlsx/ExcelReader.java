@@ -10,7 +10,8 @@
  */
 package net.clementlevallois.io.xlsx;
 
-import com.monitorjbl.xlsx.StreamingReader;
+
+import com.github.pjfanning.xlsx.StreamingReader;
 import java.io.ByteArrayInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -160,43 +161,49 @@ public class ExcelReader {
     }
 
     public static String returnStringValue(Cell cell) {
-        CellType cellType = cell.getCellType();
+        if (cell == null) {
+            return "";
+        }
 
-        switch (cellType) {
-            case NUMERIC -> {
-                try {
-                    double doubleVal = cell.getNumericCellValue();
-                    if (doubleVal == (int) doubleVal) {
-                        int value = Double.valueOf(doubleVal).intValue();
-                        return String.valueOf(value);
-                    } else {
-                        return String.valueOf(doubleVal);
+        CellType cellType = cell.getCellType();
+        try {
+
+            switch (cellType) {
+                case NUMERIC -> {
+                    try {
+                        double doubleVal = cell.getNumericCellValue();
+                        if (doubleVal == (int) doubleVal) {
+                            int value = Double.valueOf(doubleVal).intValue();
+                            return String.valueOf(value);
+                        } else {
+                            return String.valueOf(doubleVal);
+                        }
+                    } catch (java.lang.NumberFormatException e) {
+                        System.out.println("error reading double value in cell");
+                        return "error decoding value of the cell";
                     }
-                } catch (java.lang.NumberFormatException e) {
-                    System.out.println("error reading double value in cell");
-                    System.out.println("error: " + e.getMessage());
-                    System.out.println("returning 0");
-                    return "0";
+                }
+                case STRING -> {
+                    String stringCellValue = cell.getStringCellValue();
+                    return stringCellValue;
+                }
+                case ERROR -> {
+                    return "#ERR";
+                }
+                case BLANK -> {
+                    return "";
+                }
+                case FORMULA -> {
+                    return cell.getCellFormula();
+                }
+                case BOOLEAN -> {
+                    return String.valueOf(cell.getBooleanCellValue());
                 }
             }
-            case STRING -> {
-                return cell.getStringCellValue();
-            }
-            case ERROR -> {
-                byte errorCellValue = cell.getErrorCellValue();
-                return Character.toString((char) errorCellValue);
-            }
-            case BLANK -> {
-                return "";
-            }
-            case FORMULA -> {
-                return cell.getCellFormula();
-            }
-            case BOOLEAN -> {
-                return String.valueOf(cell.getBooleanCellValue());
-            }
+        } catch (Exception e) {
+            return "error decoding value of the cell";
         }
-        return "error decoding string value of the cell";
+        return "error decoding value of the cell";
     }
 
 }

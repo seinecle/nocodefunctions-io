@@ -30,15 +30,11 @@ import org.apache.pdfbox.text.PDFTextStripper;
  * @author LEVALLOIS
  */
 public class PdfImporter {
-    
+
     static {
         // Configure logging levels
         Logger pdfboxLogger = Logger.getLogger("org.apache.pdfbox");
         pdfboxLogger.setLevel(Level.SEVERE);
-        
-        // Specifically for the Splitter if needed
-        Logger splitterLogger = Logger.getLogger("org.apache.pdfbox.multipdf");
-        splitterLogger.setLevel(Level.SEVERE);
     }
 
     public List<SheetModel> importPdfFile(InputStream is, String fileName, String localizedEmptyLineMessage) {
@@ -103,7 +99,7 @@ public class PdfImporter {
             sheets.add(sheetModel);
 
         } catch (IOException ex) {
-            Logger.getLogger(PdfImporter.class.getName()).log(Level.SEVERE, null, ex);
+            System.out.println("file in pdf import io function caused an IO exception : empty or corrupted file, or not pdf");
         }
         return sheets;
     }

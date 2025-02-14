@@ -18,15 +18,11 @@ import org.apache.pdfbox.rendering.PDFRenderer;
  * @author LEVALLOIS
  */
 public class PdfToPngConverter {
-    
+
     static {
         // Configure logging levels
         Logger pdfboxLogger = Logger.getLogger("org.apache.pdfbox");
         pdfboxLogger.setLevel(Level.SEVERE);
-        
-        // Specifically for the Splitter if needed
-        Logger splitterLogger = Logger.getLogger("org.apache.pdfbox.multipdf");
-        splitterLogger.setLevel(Level.SEVERE);
     }
 
     public byte[][] convertPdfFileToPngs(InputStream is) throws IOException {

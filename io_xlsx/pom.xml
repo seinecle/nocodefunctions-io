@@ -37,9 +37,14 @@
             <artifactId>umigon-model-classification</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.monitorjbl</groupId>
-            <artifactId>xlsx-streamer</artifactId>
-            <version>2.2.0</version>
+            <groupId>com.github.pjfanning</groupId>
+            <artifactId>excel-streaming-reader</artifactId>
+            <version>5.0.2</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.pjfanning</groupId>
+            <artifactId>poi-shared-strings</artifactId>
+            <version>2.9.1</version>
         </dependency>
         <dependency>
             <groupId>org.jsoup</groupId>
