@@ -50,11 +50,12 @@ public class ImportPdfEndPoints {
             String fileName = ctx.queryParam("fileName");
             String localizedEmptyLineMessage = ctx.queryParam("localizedEmptyLineMessage");
 
-            InputStream is = new ByteArrayInputStream(bodyAsBytes);
-            PdfImporter pdfImporter = new PdfImporter();
-            List<SheetModel> sheets = pdfImporter.importPdfFile(is, fileName, localizedEmptyLineMessage);
-
-            byte[] byteArray = APIController.byteArraySerializerForSheets(sheets);
+            byte[] byteArray;
+            try (InputStream is = new ByteArrayInputStream(bodyAsBytes)) {
+                PdfImporter pdfImporter = new PdfImporter();
+                List<SheetModel> sheets = pdfImporter.importPdfFile(is, fileName, localizedEmptyLineMessage);
+                byteArray = APIController.byteArraySerializerForSheets(sheets);
+            }
 
             ctx.result(byteArray).status(HttpURLConnection.HTTP_OK);
         });
@@ -63,33 +64,33 @@ public class ImportPdfEndPoints {
             increment();
             String fileName = ctx.queryParam("fileName");
             String uniqueFileId = ctx.queryParam("uniqueFileId");
-            String dataPersistenceId = ctx.queryParam("dataPersistenceId");
+            String jobId = ctx.queryParam("jobId");
 
-            Path tempDataPath = Path.of(APIController.tempFilesFolder.toString(), dataPersistenceId + uniqueFileId);
+            Path tempDataPath = APIController.tempFilesFolder.resolve(jobId).resolve(jobId + uniqueFileId);
             if (Files.exists(tempDataPath)) {
-                InputStream is = new FileInputStream(tempDataPath.toFile());
-                PdfImporter pdfImporter = new PdfImporter();
-                List<SheetModel> sheets = pdfImporter.importPdfFile(is, fileName, "");
-                StringBuilder sb = new StringBuilder();
-                for (SheetModel sm : sheets) {
-                    List<CellRecord> cellRecords = sm.getColumnIndexToCellRecords().get(0);
-                    if (cellRecords == null || cellRecords.isEmpty()) {
-                        ctx.result("reading the pdf file returned no text: app error or wrong file?").status(HttpURLConnection.HTTP_BAD_REQUEST);
-                    } else {
-                        for (CellRecord cr : cellRecords) {
-                            String line = cr.getRawValue();
-                            if (line != null && !line.isBlank() && line.trim().contains(" ")) {
-                                sb.append(cr.getRawValue()).append("\n");
+                try (InputStream is = new FileInputStream(tempDataPath.toFile())) {
+                    PdfImporter pdfImporter = new PdfImporter();
+                    List<SheetModel> sheets = pdfImporter.importPdfFile(is, fileName, "");
+                    StringBuilder sb = new StringBuilder();
+                    for (SheetModel sm : sheets) {
+                        List<CellRecord> cellRecords = sm.getColumnIndexToCellRecords().get(0);
+                        if (cellRecords == null || cellRecords.isEmpty()) {
+                            ctx.result("reading the pdf file returned no text: app error or wrong file?").status(HttpURLConnection.HTTP_BAD_REQUEST);
+                        } else {
+                            for (CellRecord cr : cellRecords) {
+                                String line = cr.getRawValue();
+                                if (line != null && !line.isBlank() && line.trim().contains(" ")) {
+                                    sb.append(cr.getRawValue()).append("\n");
+                                }
                             }
                         }
                     }
+                    Path fullPathForFileContainingTextInput = Path.of(APIController.tempFilesFolder.toString(), jobId, jobId);
+                    if (Files.notExists(fullPathForFileContainingTextInput)) {
+                        Files.createFile(fullPathForFileContainingTextInput);
+                    }
+                    SynchronizedFileWrite.concurrentWriting(fullPathForFileContainingTextInput, sb.toString());
                 }
-                Path fullPathForFileContainingTextInput = Path.of(APIController.tempFilesFolder.toString(), dataPersistenceId);
-                if (Files.notExists(fullPathForFileContainingTextInput)) {
-                    Files.createFile(fullPathForFileContainingTextInput);
-                }
-                SynchronizedFileWrite.concurrentWriting(fullPathForFileContainingTextInput, sb.toString());
-                is.close();
                 Files.deleteIfExists(tempDataPath);
                 ctx.result("ok").status(HttpURLConnection.HTTP_OK);
             } else {
@@ -103,13 +104,15 @@ public class ImportPdfEndPoints {
             byte[] bodyAsBytes = ctx.bodyAsBytes();
 
             String fileName = ctx.queryParam("fileName");
-            InputStream is = new ByteArrayInputStream(bodyAsBytes);
-            PdfToPngConverter pdfToPngConverter = new PdfToPngConverter();
-            byte[][] images = pdfToPngConverter.convertPdfFileToPngs(is);
-            ImagesPerFile ipf = new ImagesPerFile();
-            ipf.setImages(images);
-            ipf.setFileName(fileName);
-            byte[] byteArraySerializerForAnyObject = APIController.byteArraySerializerForAnyObject(ipf);
+            byte[] byteArraySerializerForAnyObject;
+            try (InputStream is = new ByteArrayInputStream(bodyAsBytes)) {
+                PdfToPngConverter pdfToPngConverter = new PdfToPngConverter();
+                byte[][] images = pdfToPngConverter.convertPdfFileToPngs(is);
+                ImagesPerFile ipf = new ImagesPerFile();
+                ipf.setImages(images);
+                ipf.setFileName(fileName);
+                byteArraySerializerForAnyObject = APIController.byteArraySerializerForAnyObject(ipf);
+            }
             ctx.result(byteArraySerializerForAnyObject).status(HttpURLConnection.HTTP_OK);
         });
 
@@ -169,12 +172,12 @@ public class ImportPdfEndPoints {
                     jsonObject = objectBuilder.build();
                     ctx.result(jsonObject.toString()).status(HttpURLConnection.HTTP_BAD_REQUEST);
                 }
-                InputStream stream = new ByteArrayInputStream(pdfAsBytes);
-
-                PdfExtractorByRegion pibr = new PdfExtractorByRegion();
-                SheetModel data = pibr.extractTextFromRegionInPdf(stream, fileName, allPages, selectedPage, leftCornerX, leftCornerY, width, height);
-
-                byte[] byteArray = APIController.byteArraySerializerForAnyObject(data);
+                byte[] byteArray;
+                try (InputStream stream = new ByteArrayInputStream(pdfAsBytes)) {
+                    PdfExtractorByRegion pibr = new PdfExtractorByRegion();
+                    SheetModel data = pibr.extractTextFromRegionInPdf(stream, fileName, allPages, selectedPage, leftCornerX, leftCornerY, width, height);
+                    byteArray = APIController.byteArraySerializerForAnyObject(data);
+                }
 
                 ctx.result(byteArray).status(HttpURLConnection.HTTP_OK);
             }

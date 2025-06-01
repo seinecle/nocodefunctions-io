@@ -14,13 +14,17 @@ import java.io.ObjectInputStream;
 import java.io.StringReader;
 import java.net.HttpURLConnection;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import net.clementlevallois.functions.model.Occurrence;
+import net.clementlevallois.functions.model.WorkflowTopicsProps;
 import net.clementlevallois.importers.model.SheetModel;
 import net.clementlevallois.io.xlsx.ExcelSaver;
+import net.clementlevallois.nocodeimportwebservices.APIController;
 import static net.clementlevallois.nocodeimportwebservices.APIController.increment;
 import net.clementlevallois.umigon.model.classification.Document;
 import net.clementlevallois.utils.Multiset;
@@ -85,16 +89,16 @@ public class ExportXlsEndPoints {
 
         app.post("/api/export/xlsx/topics", ctx -> {
             increment();
+            WorkflowTopicsProps props = new WorkflowTopicsProps(APIController.tempFilesFolder);
 
             int nbTerms = Integer.parseInt(ctx.queryParam("nbTerms"));
+            String jobId = ctx.queryParam("jobId");
             Map<Integer, Multiset<String>> keywordsPerTopic = new TreeMap();
             Map<Integer, Multiset<Integer>> topicsPerLine = new TreeMap();
 
-            byte[] bodyAsBytes = ctx.bodyAsBytes();
-            ByteArrayInputStream bis = new ByteArrayInputStream(bodyAsBytes);
-            ObjectInputStream ois = new ObjectInputStream(bis);
-            String jsonResultAsString = (String) ois.readObject();
-            JsonReader jsonReader = Json.createReader(new StringReader(jsonResultAsString));
+            Path jsonResults = props.getGlobalResultsJsonFilePath(jobId);
+            String jsonResultsAsString = Files.readString(jsonResults);
+            JsonReader jsonReader = Json.createReader(new StringReader(jsonResultsAsString));
             JsonObject jsonObject = jsonReader.readObject();
             JsonObject keywordsPerTopicAsJson = jsonObject.getJsonObject("keywordsPerTopic");
             for (String keyCommunity : keywordsPerTopicAsJson.keySet()) {

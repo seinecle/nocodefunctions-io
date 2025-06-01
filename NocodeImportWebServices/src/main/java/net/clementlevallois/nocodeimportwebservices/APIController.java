@@ -25,6 +25,7 @@ import java.util.logging.Logger;
 import net.clementlevallois.importers.model.SheetModel;
 import net.clementlevallois.nocodeimportwebservices.export_xlsx.ExportXlsEndPoints;
 import net.clementlevallois.nocodeimportwebservices.import_csv.ImportCsvEndPoints;
+import net.clementlevallois.nocodeimportwebservices.import_gexf.ImportGexfEndPoints;
 import net.clementlevallois.nocodeimportwebservices.import_html.ImportHtmlEndPoints;
 import net.clementlevallois.nocodeimportwebservices.import_json.ImportJsonEndPoints;
 import net.clementlevallois.nocodeimportwebservices.import_pdf.ImportPdfEndPoints;
@@ -74,6 +75,7 @@ public class APIController {
         app = ImportPdfEndPoints.addAll(app);
         app = ImportXlsEndPoints.addAll(app);
         app = ImportHtmlEndPoints.addAll(app);
+        app = ImportGexfEndPoints.addAll(app);
         app = ExportXlsEndPoints.addAll(app);
         System.out.println("running the api");
 

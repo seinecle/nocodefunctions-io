@@ -1,8 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package net.clementlevallois.importers.model;
 
 import java.io.Serializable;
@@ -20,14 +15,21 @@ public class SheetModel implements Serializable {
 
     private String name;
     private List<CellRecord> cellRecords = new ArrayList();
-    private Map<Integer, List<CellRecord>> rowIndexToCellRecords = new HashMap();
-    private Map<Integer, List<CellRecord>> columnIndexToCellRecords = new HashMap();
+    private final Map<Integer, List<CellRecord>> rowIndexToCellRecords = new HashMap();
+    private final Map<Integer, List<CellRecord>> columnIndexToCellRecords = new HashMap();
     private Map<Integer, Integer> pageAndStartingLine = new TreeMap();
 
-    private List< Map<String, ColumnModel>> sheetData = new ArrayList();
-    private List<String> sheetDataWholeLines = new ArrayList();
+    private final List< Map<String, ColumnModel>> sheetData = new ArrayList();
+    private final List<String> sheetDataWholeLines = new ArrayList();
     private List<ColumnModel> tableHeaderNames;
     private boolean hasHeaders = false;
+
+    public SheetModel() {
+    }
+        
+    public SheetModel(String name) {
+        this.name = name;
+    }
 
     public String getName() {
         return name;

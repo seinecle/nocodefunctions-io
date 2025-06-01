@@ -13,9 +13,9 @@
                   
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.compiler.source>17</maven.compiler.source>
-        <maven.compiler.target>17</maven.compiler.target>
-        <gephi.version>0.9.7</gephi.version>
+        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
+        <gephi.toolkit.version>0.10.1</gephi.toolkit.version>
         <netbeans.version>RELEASE140</netbeans.version>
         <webmagic.version>0.10.13</webmagic.version>
     </properties>
@@ -29,6 +29,7 @@
         <module>io_json</module>
         <module>io_pdf</module>
         <module>io_html</module>
+        <module>io_gexf</module>
     </modules>
     
     <dependencyManagement>
@@ -115,6 +116,14 @@
                 <version>4.11.0</version>
                 <scope>test</scope>
             </dependency>
+            <!--GEPHI-->
+           
+            <dependency>
+                <groupId>org.gephi</groupId>
+                <artifactId>gephi-toolkit</artifactId>
+                <version>${gephi.toolkit.version}</version>
+            </dependency>
+
         </dependencies>
     </dependencyManagement>
       

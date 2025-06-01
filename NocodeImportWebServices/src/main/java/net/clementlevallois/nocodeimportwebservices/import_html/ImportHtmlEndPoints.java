@@ -65,7 +65,9 @@ public class ImportHtmlEndPoints {
             JsonArray jsonArray = Json.createReader(new ByteArrayInputStream(bodyAsBytes)).readArray();
 
             if (dataPersistenceId != null) {
-                Path fullPathForFileContainingTextInput = Path.of(APIController.tempFilesFolder.toString(), dataPersistenceId);
+                Path tempDirForThisProject = Path.of(APIController.tempFilesFolder.toString(), dataPersistenceId);
+                Files.createDirectories(tempDirForThisProject);
+                Path fullPathForFileContainingTextInput = tempDirForThisProject.resolve(dataPersistenceId);
                 StringBuilder sb = new StringBuilder();
                 HtmlImporter htmlImporter = new HtmlImporter();
                 for (JsonObject jsonObject : jsonArray.getValuesAs(JsonObject.class)) {

@@ -12,6 +12,7 @@
     
     <name>Nocode io as an API</name>
     <dependencyManagement>
+        <!--this is to force the version 2.16. The webmagic from the html crawler pulls in the 2.11 version, which is too low for the excel stream dep.-->
         <dependencies>
             <dependency>
                 <groupId>commons-io</groupId>
@@ -24,7 +25,7 @@
         <dependency>
             <groupId>io.javalin</groupId>
             <artifactId>javalin</artifactId>
-            <version>6.4.0</version>
+            <version>6.6.0</version>
         </dependency>
         <dependency>
             <groupId>jakarta.json</groupId>
@@ -77,6 +78,11 @@
         <dependency>
             <groupId>net.clementlevallois.io</groupId>
             <artifactId>io_pdf</artifactId>
+            <version>1.0</version>
+        </dependency>
+        <dependency>
+            <groupId>net.clementlevallois.io</groupId>
+            <artifactId>io_gexf</artifactId>
             <version>1.0</version>
         </dependency>
         <dependency>
@@ -151,5 +157,7 @@
             </plugin>
         </plugins>
     </build>
-
+    <properties>
+        <maven.compiler.release>24</maven.compiler.release>
+    </properties>
 </project>
