@@ -86,9 +86,6 @@ public class ImportPdfEndPoints {
                         }
                     }
                     Path fullPathForFileContainingTextInput = Path.of(APIController.tempFilesFolder.toString(), jobId, jobId);
-                    if (Files.notExists(fullPathForFileContainingTextInput)) {
-                        Files.createFile(fullPathForFileContainingTextInput);
-                    }
                     SynchronizedFileWrite.concurrentWriting(fullPathForFileContainingTextInput, sb.toString());
                 }
                 Files.deleteIfExists(tempDataPath);

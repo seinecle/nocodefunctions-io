@@ -48,9 +48,9 @@ public class ImportTxtEndPoints {
         app.get("/api/import/txt/simpleLines", ctx -> {
             increment();
             String fileName = ctx.queryParam("fileName");
-            String dataPersistenceId = ctx.queryParam("dataPersistenceId");
+            String jobId = ctx.queryParam("jobId");
             String uniqueFileId = ctx.queryParam("uniqueFileId");
-            Path tempDataPath = Path.of(APIController.tempFilesFolder.toString(), dataPersistenceId + uniqueFileId);
+            Path tempDataPath = Path.of(APIController.tempFilesFolder.toString(), jobId + uniqueFileId);
             if (Files.exists(tempDataPath)) {
                 byte[] readAllBytes = Files.readAllBytes(tempDataPath);
                 String functionName = Optional.ofNullable(ctx.queryParam("functionName")).orElse("function not set");
@@ -70,10 +70,7 @@ public class ImportTxtEndPoints {
                         }
                     }
                 }
-                Path fullPathForFileContainingTextInput = Path.of(APIController.tempFilesFolder.toString(), dataPersistenceId);
-                if (Files.notExists(fullPathForFileContainingTextInput)) {
-                    Files.createFile(fullPathForFileContainingTextInput);
-                }
+                Path fullPathForFileContainingTextInput = Path.of(APIController.tempFilesFolder.toString(), jobId, jobId);
                 SynchronizedFileWrite.concurrentWriting(fullPathForFileContainingTextInput, sb.toString());
                 Files.deleteIfExists(tempDataPath);
 

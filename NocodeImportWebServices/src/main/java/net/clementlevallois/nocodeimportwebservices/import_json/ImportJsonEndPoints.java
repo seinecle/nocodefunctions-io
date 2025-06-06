@@ -24,18 +24,15 @@ public class ImportJsonEndPoints {
 
         app.get("/api/import/json/simpleLines", ctx -> {
             increment();
-            String dataPersistenceId = ctx.queryParam("dataPersistenceId");
+            String jobId = ctx.queryParam("jobId");
             String uniqueFileId = ctx.queryParam("uniqueFileId");
             String jsonKey = ctx.queryParam("jsonKey");
-            Path tempDataPath = Path.of(APIController.tempFilesFolder.toString(), dataPersistenceId + uniqueFileId);
+            Path tempDataPath = Path.of(APIController.tempFilesFolder.toString(), jobId + uniqueFileId);
             if (Files.exists(tempDataPath)) {
                 byte[] readAllBytes = Files.readAllBytes(tempDataPath);
-                Path fullPathForFileContainingTextInput = Path.of(APIController.tempFilesFolder.toString(), dataPersistenceId);
+                Path fullPathForFileContainingTextInput = Path.of(APIController.tempFilesFolder.toString(), jobId, jobId);
                 JsonImporter jsonImporter = new JsonImporter();
                 String simpleLines = jsonImporter.importJsonFileToSimpleLines(readAllBytes, jsonKey);
-                if (Files.notExists(fullPathForFileContainingTextInput)) {
-                    Files.createFile(fullPathForFileContainingTextInput);
-                }
                 SynchronizedFileWrite.concurrentWriting(fullPathForFileContainingTextInput, simpleLines);
                 Files.deleteIfExists(tempDataPath);
                 ctx.result("ok").status(HttpURLConnection.HTTP_OK);
