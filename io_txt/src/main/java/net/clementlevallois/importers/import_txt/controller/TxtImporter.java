@@ -10,9 +10,7 @@ import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
-import static java.util.stream.Collectors.toList;
+import java.util.stream.Collectors;
 import net.clementlevallois.importers.model.CellRecord;
 import net.clementlevallois.importers.model.ColumnModel;
 import net.clementlevallois.importers.model.SheetModel;
@@ -29,83 +27,64 @@ public class TxtImporter {
         System.out.println("Hello World!");
     }
 
-    public List<SheetModel> importTextFile(byte[] bytes, String fileName, String functionName, String gazeOption) {
-        Map<Integer, String> lines = new TreeMap();
+    public List<SheetModel> importCooccurencesInTextFile(byte[] bytes, String fileName) {
         List<SheetModel> sheets = new ArrayList();
         ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(bytes);
         try {
-
-            // if we are computing cooccurrences, we need the lines of text to be decomposed as a csv file.
-            // this should really be handled by the csv importer we have elsewhere, but the .txt file extension file of the user has led us here...
-            if (functionName.equals("gaze") && gazeOption.equals("1")) {
-                CsvParserSettings settings = new CsvParserSettings();
-                settings.detectFormatAutomatically();
-                settings.setMaxCharsPerColumn(-1);
-                CsvParser parser = new CsvParser(settings);
-                Reader reader = Chardet.decode(byteArrayInputStream, StandardCharsets.UTF_8);
-                List<String[]> rows = parser.parseAll(reader);
-                SheetModel sheetModel = new SheetModel();
-                sheetModel.setName(fileName);
-                ColumnModel cm;
-                List<ColumnModel> headerNames = new ArrayList();
-                String[] firstLine = rows.get(0);
-                int h = 0;
-                for (String header : firstLine) {
-                    if (header == null) {
-                        header = "";
-                    }
-                    header = Jsoup.clean(header, Safelist.basicWithImages().addAttributes("span", "style"));
-                    cm = new ColumnModel(String.valueOf(h++), header.trim());
-                    headerNames.add(cm);
+            CsvParserSettings settings = new CsvParserSettings();
+            settings.detectFormatAutomatically();
+            settings.setMaxCharsPerColumn(-1);
+            CsvParser parser = new CsvParser(settings);
+            Reader reader = Chardet.decode(byteArrayInputStream, StandardCharsets.UTF_8);
+            List<String[]> rows = parser.parseAll(reader);
+            SheetModel sheetModel = new SheetModel();
+            sheetModel.setName(fileName);
+            ColumnModel cm;
+            List<ColumnModel> headerNames = new ArrayList();
+            String[] firstLine = rows.get(0);
+            int h = 0;
+            for (String header : firstLine) {
+                if (header == null) {
+                    header = "";
                 }
-
-                sheetModel.setTableHeaderNames(headerNames);
-                int j = 0;
-                for (String[] row : rows) {
-                    int i = 0;
-                    for (String field : row) {
-                        if (field == null) {
-                            field = "";
-                        }
-                        field = Jsoup.clean(field, Safelist.basicWithImages().addAttributes("span", "style"));
-                        CellRecord cellRecord = new CellRecord(j, i++, field.trim());
-                        sheetModel.addCellRecord(cellRecord);
-                    }
-                    j++;
-                }
-                sheets.add(sheetModel);
-
-            } // normal case of importing text as flat lines without caring for cooccurrences
-            else {
-                List<String> txtLines;
-                Reader chars = Chardet.decode(byteArrayInputStream, StandardCharsets.UTF_8);
-                try (BufferedReader br = new BufferedReader(chars)) {
-                    txtLines = br.lines().collect(toList());
-                }
-                int i = 0;
-                for (String line : txtLines) {
-                    if (line == null) {
-                        line = "";
-                    }
-                    line = Jsoup.clean(line, Safelist.basicWithImages().addAttributes("span", "style"));
-                    lines.put(i++, line);
-                }
-                SheetModel sheetModel = new SheetModel();
-                sheetModel.setName(fileName);
-                ColumnModel cm;
-                cm = new ColumnModel("0", lines.get(0));
-                List<ColumnModel> headerNames = new ArrayList();
+                header = Jsoup.clean(header, Safelist.basicWithImages().addAttributes("span", "style"));
+                cm = new ColumnModel(String.valueOf(h++), header.trim());
                 headerNames.add(cm);
-                sheetModel.setTableHeaderNames(headerNames);
-                for (Map.Entry<Integer, String> line : lines.entrySet()) {
-                    CellRecord cellRecord = new CellRecord(line.getKey(), 0, line.getValue());
+            }
+
+            sheetModel.setTableHeaderNames(headerNames);
+            int j = 0;
+            for (String[] row : rows) {
+                int i = 0;
+                for (String field : row) {
+                    if (field == null) {
+                        field = "";
+                    }
+                    field = Jsoup.clean(field, Safelist.basicWithImages().addAttributes("span", "style"));
+                    CellRecord cellRecord = new CellRecord(j, i++, field.trim());
                     sheetModel.addCellRecord(cellRecord);
                 }
-                sheets.add(sheetModel);
+                j++;
             }
+            sheets.add(sheetModel);
+
         } catch (IOException ex) {
             System.out.println("exception: " + ex.getMessage());
         }
         return sheets;
+    }
+
+    public String importSimpleLinesInTextFile(byte[] bytes) {
+        try (Reader reader = Chardet.decode(new ByteArrayInputStream(bytes), StandardCharsets.UTF_8); BufferedReader br = new BufferedReader(reader)) {
+
+            return br.lines()
+                    .map(line -> line == null ? "" : line)
+                    .map(line -> Jsoup.clean(line, Safelist.basicWithImages().addAttributes("span", "style")))
+                    .collect(Collectors.joining("\n"));
+
+        } catch (IOException ex) {
+            System.getLogger(TxtImporter.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
+            return "";
+        }
     }
 }

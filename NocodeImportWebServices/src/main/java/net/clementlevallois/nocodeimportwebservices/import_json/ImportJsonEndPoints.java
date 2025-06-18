@@ -27,7 +27,7 @@ public class ImportJsonEndPoints {
             String jobId = ctx.queryParam("jobId");
             String uniqueFileId = ctx.queryParam("uniqueFileId");
             String jsonKey = ctx.queryParam("jsonKey");
-            Path tempDataPath = Path.of(APIController.tempFilesFolder.toString(), jobId + uniqueFileId);
+            Path tempDataPath = APIController.tempFilesFolder.resolve(jobId).resolve(jobId + uniqueFileId);
             if (Files.exists(tempDataPath)) {
                 byte[] readAllBytes = Files.readAllBytes(tempDataPath);
                 Path fullPathForFileContainingTextInput = Path.of(APIController.tempFilesFolder.toString(), jobId, jobId);

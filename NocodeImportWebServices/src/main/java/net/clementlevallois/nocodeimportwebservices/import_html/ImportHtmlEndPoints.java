@@ -59,25 +59,21 @@ public class ImportHtmlEndPoints {
 
         app.post("/api/import/html/getRawTextFromLinks", ctx -> {
             increment();
-            String dataPersistenceId = ctx.queryParam("dataPersistenceId");
+            String jobId = ctx.queryParam("jobId");
             byte[] bodyAsBytes = ctx.bodyAsBytes();
 
             JsonArray jsonArray = Json.createReader(new ByteArrayInputStream(bodyAsBytes)).readArray();
 
-            if (dataPersistenceId != null) {
-                Path tempDirForThisProject = Path.of(APIController.tempFilesFolder.toString(), dataPersistenceId);
+            if (jobId != null) {
+                Path tempDirForThisProject = Path.of(APIController.tempFilesFolder.toString(), jobId);
                 Files.createDirectories(tempDirForThisProject);
-                Path fullPathForFileContainingTextInput = tempDirForThisProject.resolve(dataPersistenceId);
+                Path fullPathForFileContainingTextInput = tempDirForThisProject.resolve(jobId);
                 StringBuilder sb = new StringBuilder();
                 HtmlImporter htmlImporter = new HtmlImporter();
                 for (JsonObject jsonObject : jsonArray.getValuesAs(JsonObject.class)) {
-                    // Process each JsonObject
                     String simpleLines = htmlImporter.importHtmlPageToSimpleLines(jsonObject.keySet().iterator().next());
                     sb.append(simpleLines);
                     sb.append(System.lineSeparator());
-                }
-                if (Files.notExists(fullPathForFileContainingTextInput)) {
-                    Files.createFile(fullPathForFileContainingTextInput);
                 }
                 SynchronizedFileWrite.concurrentWriting(fullPathForFileContainingTextInput, sb.toString());
                 ctx.result("ok").status(HttpURLConnection.HTTP_OK);

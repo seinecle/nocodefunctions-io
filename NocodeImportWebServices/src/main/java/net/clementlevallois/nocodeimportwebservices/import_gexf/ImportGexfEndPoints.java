@@ -30,8 +30,8 @@ public class ImportGexfEndPoints {
             JsonObjectBuilder objectBuilder = Json.createObjectBuilder();
             NaiveRateLimit.requestPerTimeUnit(ctx, 50, TimeUnit.SECONDS);
 
-            String dataPersistenceId = ctx.queryParam("dataPersistenceId");
-            Path tempDataPath = Path.of(APIController.tempFilesFolder.toString(), dataPersistenceId + "_result");
+            String jobId = ctx.queryParam("jobId");
+            Path tempDataPath = APIController.tempFilesFolder.resolve(jobId).resolve(jobId);
             String gexfAsString = "";
             try {
                 gexfAsString = Files.readString(tempDataPath, StandardCharsets.UTF_8);

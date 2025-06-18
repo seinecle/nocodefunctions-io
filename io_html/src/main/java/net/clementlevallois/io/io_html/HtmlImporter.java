@@ -145,7 +145,7 @@ public class HtmlImporter {
     private static void addLineBreaksToAllElements(Document doc) {
         Elements elements = doc.getAllElements();
         for (Element element : elements) {
-            element.appendText("\n"); // Appends a newline character to the text of each element
+            element.appendText("\n");
         }
     }
 

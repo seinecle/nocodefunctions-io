@@ -1,13 +1,5 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Project/Maven2/JavaApp/src/main/java/${packagePath}/${mainClassName}.java to edit this template
- */
 package net.clementlevallois.importers.import_pdf.controller;
 
-//import com.itextpdf.kernel.pdf.PdfDocument;
-//import com.itextpdf.kernel.pdf.PdfReader;
-//import com.itextpdf.kernel.pdf.canvas.parser.PdfTextExtractor;
-//import com.itextpdf.kernel.pdf.canvas.parser.listener.SimpleTextExtractionStrategy;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -32,12 +24,60 @@ import org.apache.pdfbox.text.PDFTextStripper;
 public class PdfImporter {
 
     static {
-        // Configure logging levels
         Logger pdfboxLogger = Logger.getLogger("org.apache.pdfbox");
         pdfboxLogger.setLevel(Level.SEVERE);
     }
 
-    public List<SheetModel> importPdfFile(InputStream is, String fileName, String localizedEmptyLineMessage) {
+    public String importPdfFileToSimpleLines(InputStream is) {
+        Map<Integer, String> lines = new TreeMap();
+
+        try (PDDocument doc = Loader.loadPDF(new RandomAccessReadBuffer(is))) {
+
+            PDFTextStripper pdfTextStripper = new PDFTextStripper();
+            PageExtractor pageExtractor;
+            int numberOfPages = doc.getPages().getCount();
+            int pageNumber;
+            int i = 0;
+            for (pageNumber = 1; pageNumber <= numberOfPages; pageNumber++) {
+                pageExtractor = new PageExtractor(doc, pageNumber, pageNumber);
+                try (PDDocument pageAsDoc = pageExtractor.extract()) {
+                    String textInPage = pdfTextStripper.getText(pageAsDoc);
+
+                    String linesArray[] = textInPage.split("\\r?\\n");
+                    for (String line : linesArray) {
+                        lines.put(i++, line);
+                    }
+                }
+            }
+            doc.close();
+
+            /* this step addresses the case of text imported from a PDF source.
+            
+            PDF imports can have their last words truncated at the end, like so:
+            
+            "Inbound call centers tend to focus on assistance for customers who need to solve their problems, ques-
+            tions bout a product or service, schedule appointments, dispatch technicians, or need instructions"
+
+            In this case, the last word of the first sentence should be removed,
+            and so should be the first word of the following line.
+            
+            Thx to https://twitter.com/Verukita1 for reporting the issue with a test case.
+            
+             */
+            lines = Utils.fixHyphenatedWordsAndReturnOriginalEntries(lines);
+
+            StringBuilder sb = new StringBuilder();
+            lines.entrySet().forEach(e -> sb.append(e.getValue()).append("\n"));
+
+            return sb.toString();
+
+        } catch (IOException ex) {
+            System.out.println("file in pdf import io to simple lines function caused an IO exception : empty or corrupted file, or not pdf");
+            return "";
+        }
+    }
+
+    public List<SheetModel> importPdfFileToLinesPerPage(InputStream is, String fileName, String localizedEmptyLineMessage) {
         Map<Integer, String> lines = new TreeMap();
         List<SheetModel> sheets = new ArrayList();
 
@@ -48,26 +88,24 @@ public class PdfImporter {
             PDFTextStripper pdfTextStripper = new PDFTextStripper();
             PageExtractor pageExtractor;
 
-//            PdfDocument myDocument = new PdfDocument(new PdfReader(is));
-//            int numberOfPages = myDocument.getNumberOfPages();
             int numberOfPages = doc.getPages().getCount();
             int pageNumber;
             int i = 0;
             for (pageNumber = 1; pageNumber <= numberOfPages; pageNumber++) {
                 sheetModel.getPageAndStartingLine().put(pageNumber, i);
                 pageExtractor = new PageExtractor(doc, pageNumber, pageNumber);
-                PDDocument pageAsDoc = pageExtractor.extract();
-                String textInPage = pdfTextStripper.getText(pageAsDoc);
-
-                String linesArray[] = textInPage.split("\\r?\\n");
-                for (String line : linesArray) {
-                    if (!line.isBlank()) {
-                        lines.put(i++, line);
-                    } else {
-                        lines.put(i++, localizedEmptyLineMessage);
+                try (PDDocument pageAsDoc = pageExtractor.extract()) {
+                    String textInPage = pdfTextStripper.getText(pageAsDoc);
+                    
+                    String linesArray[] = textInPage.split("\\r?\\n");
+                    for (String line : linesArray) {
+                        if (!line.isBlank()) {
+                            lines.put(i++, line);
+                        } else {
+                            lines.put(i++, localizedEmptyLineMessage);
+                        }
                     }
                 }
-                pageAsDoc.close();
             }
             doc.close();
 //            myDocument.close();
@@ -103,4 +141,5 @@ public class PdfImporter {
         }
         return sheets;
     }
+
 }

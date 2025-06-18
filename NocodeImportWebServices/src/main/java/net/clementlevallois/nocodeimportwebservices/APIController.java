@@ -1,8 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package net.clementlevallois.nocodeimportwebservices;
 
 import io.javalin.Javalin;
@@ -19,9 +14,11 @@ import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import net.clementlevallois.functions.model.Globals;
 import net.clementlevallois.importers.model.SheetModel;
 import net.clementlevallois.nocodeimportwebservices.export_xlsx.ExportXlsEndPoints;
 import net.clementlevallois.nocodeimportwebservices.import_csv.ImportCsvEndPoints;
@@ -37,13 +34,10 @@ import net.clementlevallois.nocodeimportwebservices.import_xlsx.ImportXlsEndPoin
  * @author LEVALLOIS
  */
 public class APIController {
-
-    /**
-     * @param args the command line arguments
-     */
     private static Javalin app;
     public static String pwdOwner;
     public static Path tempFilesFolder;
+    public static Globals globals;
 
     public static void main(String[] args) throws Exception {
         Properties props = new Properties();
@@ -56,13 +50,17 @@ public class APIController {
             tempFilesFolder = Path.of(props.getProperty("pathToTempFilesLinux"));
         }
         
-        if (!Files.isDirectory(tempFilesFolder)){
+
+        if (!Files.isDirectory(tempFilesFolder)) {
             System.out.println("temp folder in private.properties file does not exist:");
             System.out.println(tempFilesFolder);
             System.out.println("exiting now");
             System.exit(-1);
         }
 
+        globals = new Globals(tempFilesFolder);
+        
+        
         String port = props.getProperty("port");
         app = Javalin.create(config -> {
             config.http.maxRequestSize = 1000000000;
@@ -121,6 +119,14 @@ public class APIController {
         oos.flush();
         byte[] data = bos.toByteArray();
         return data;
+    }
+
+    public static <E extends Enum<E>> Optional<E> enumValueOf(Class<E> enumClass, String value) {
+        try {
+            return Optional.of(Enum.valueOf(enumClass, value.toUpperCase()));
+        } catch (IllegalArgumentException e) {
+            return Optional.empty();
+        }
     }
 
 }
