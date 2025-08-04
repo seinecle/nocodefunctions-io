@@ -45,7 +45,7 @@ public class ImportPdfEndPoints {
 
     public static Javalin addAll(Javalin app) throws Exception {
 
-        app.post("/api/import/pdf/simpleLines", ctx -> {
+        app.get("/api/import/pdf/simpleLines", ctx -> {
             increment();
 
             String jobId = ctx.queryParam("jobId");
@@ -53,19 +53,27 @@ public class ImportPdfEndPoints {
 
             Path tempDataPath = APIController.globals.getInputFileCompletePath(jobId, fileUniqueId);
             if (Files.exists(tempDataPath)) {
-                try (InputStream is = new FileInputStream(tempDataPath.toFile())) {
+                InputStream is = null; // Declare outside try-with-resources for explicit closing if needed
+                try {
+                    is = new FileInputStream(tempDataPath.toFile());
                     PdfImporter pdfImporter = new PdfImporter();
                     String lines = pdfImporter.importPdfFileToSimpleLines(is);
                     SynchronizedFileWrite.concurrentWriting(APIController.globals.getInputDataPath(jobId), lines);
-                    Files.deleteIfExists(APIController.globals.getInputFileCompletePath(jobId, fileUniqueId));
+                    try {
+                        is.close();
+                    } catch (IOException e) {
+                        System.err.println("Error closing InputStream: " + e.getMessage());
+                    }
                     ctx.result("OK").status(HttpURLConnection.HTTP_OK);
+                } catch (IOException e) {
+                    System.err.println("Error processing PDF import: " + e.getMessage());
+                    ctx.result("Error processing file: " + e.getMessage()).status(HttpURLConnection.HTTP_INTERNAL_ERROR);
+                } finally {
                 }
             } else {
                 ctx.result("file not found for job " + jobId).status(HttpURLConnection.HTTP_BAD_REQUEST);
-
             }
         });
-
         app.get("/api/import/pdf/linesPerPage", ctx -> {
             increment();
             String fileName = ctx.queryParam("fileName");
@@ -79,10 +87,9 @@ public class ImportPdfEndPoints {
                     PdfImporter pdfImporter = new PdfImporter();
                     List<SheetModel> sheets = pdfImporter.importPdfFileToLinesPerPage(is, fileName, localizedEmptyLineMessage);
                     var sheetsBytes = APIController.byteArraySerializerForAnyObject(sheets);
-                    Files.write(APIController.globals.getDataSheetPath(jobId, fileUniqueId), sheetsBytes);
+//                    Files.write(APIController.globals.getDataSheetPath(jobId, fileUniqueId), sheetsBytes);
 
                 }
-                Files.deleteIfExists(tempDataPath);
                 ctx.result("ok").status(HttpURLConnection.HTTP_OK);
             } else {
                 ctx.result("file not found for job " + jobId).status(HttpURLConnection.HTTP_BAD_REQUEST);
@@ -90,7 +97,7 @@ public class ImportPdfEndPoints {
 
         });
 
-        app.post("/api/import/pdf/return-png", ctx -> {
+        app.get("/api/import/pdf/return-png", ctx -> {
             increment();
             String jobId = ctx.queryParam("jobId");
             String fileUniqueId = ctx.queryParam("fileUniqueId");
@@ -110,7 +117,7 @@ public class ImportPdfEndPoints {
             ctx.result("OK").status(HttpURLConnection.HTTP_OK);
         });
 
-        app.post("/api/import/pdf/extract-region", ctx -> {
+        app.get("/api/import/pdf/extract-region", ctx -> {
             String owner = ctx.queryParam("owner");
             if (owner == null || !owner.equals(APIController.pwdOwner)) {
                 NaiveRateLimit.requestPerTimeUnit(ctx, 50, TimeUnit.SECONDS);

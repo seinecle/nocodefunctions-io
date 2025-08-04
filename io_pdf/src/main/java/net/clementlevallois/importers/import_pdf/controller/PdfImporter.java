@@ -108,7 +108,6 @@ public class PdfImporter {
                 }
             }
             doc.close();
-//            myDocument.close();
 
             /* this step addresses the case of text imported from a PDF source.
             
@@ -132,7 +131,7 @@ public class PdfImporter {
             sheetModel.setTableHeaderNames(headerNames);
             for (Map.Entry<Integer, String> line : lines.entrySet()) {
                 CellRecord cellRecord = new CellRecord(line.getKey(), 0, line.getValue());
-                sheetModel.addCellRecord(cellRecord);
+                sheetModel.addCellRecordToVariousDataStructures(cellRecord);
             }
             sheets.add(sheetModel);
 

@@ -1,17 +1,10 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
- /*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package net.clementlevallois.io.xlsx;
 
-
 import com.github.pjfanning.xlsx.StreamingReader;
+import jakarta.json.Json;
+import jakarta.json.JsonArrayBuilder;
+import jakarta.json.JsonObject;
+import jakarta.json.JsonObjectBuilder;
 import java.io.ByteArrayInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -65,7 +58,102 @@ public class ExcelReader {
         }
     }
 
-    public static List<SheetModel> readExcelFile(byte[] bytes, String gazeOption, String separator) throws FileNotFoundException, IOException {
+    public static String readExcelFileToLinesInOneColumn(byte[] bytes, String selectedSheetName, int col, boolean hasHeaders) {
+
+        var sb = new StringBuilder();
+
+        if (bytes == null || bytes.length == 0) {
+            return sb.toString();
+        }
+
+        InputStream is = new ByteArrayInputStream(bytes);
+
+        try (Workbook wb = StreamingReader.builder()
+                .rowCacheSize(100) // number of rows to keep in memory (defaults to 10)
+                .bufferSize(4096) // buffer size to use when reading InputStream to file (defaults to 1024)
+                .open(is)) {
+            int sheetNumber = 0;
+            for (Sheet sheet : wb) {
+                sheetNumber++;
+                if (!sheet.getSheetName().equals(selectedSheetName)) {
+                    continue;
+                }
+                int rowNumber = 0;
+                for (Row r : sheet) {
+                    if (rowNumber == 0 && hasHeaders) {
+                        continue;
+                    }
+
+                    for (Cell cell : r) {
+                        if (cell == null) {
+                            continue;
+                        }
+
+                        int columnIndex = cell.getColumnIndex();
+                        if (columnIndex != col) {
+                            continue;
+                        }
+                        String returnStringValue = ExcelReader.returnStringValue(cell);
+                        returnStringValue = Jsoup.clean(returnStringValue, Safelist.basicWithImages().addAttributes("span", "style"));
+                        sb.append(returnStringValue);
+                        sb.append(System.lineSeparator());
+                    }
+                    rowNumber++;
+                }
+            }
+        } catch (IOException ex) {
+            System.getLogger(ExcelReader.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
+        }
+        return sb.toString();
+    }
+
+    public static JsonObject readExcelFileToLinesForAllColumns(byte[] bytes, String selectedSheetName, boolean hasHeaders) {
+
+        JsonObjectBuilder linesBuilder = Json.createObjectBuilder();
+
+        if (bytes == null || bytes.length == 0) {
+            return linesBuilder.build();
+        }
+
+        InputStream is = new ByteArrayInputStream(bytes);
+
+        try (Workbook wb = StreamingReader.builder()
+                .rowCacheSize(100) // number of rows to keep in memory (defaults to 10)
+                .bufferSize(4096) // buffer size to use when reading InputStream to file (defaults to 1024)
+                .open(is)) {
+            int sheetNumber = 0;
+            for (Sheet sheet : wb) {
+                sheetNumber++;
+                if (!sheet.getSheetName().equals(selectedSheetName)) {
+                    continue;
+                }
+                int rowNumber = 0;
+                for (Row r : sheet) {
+                    if (rowNumber == 0 && hasHeaders) {
+                        continue;
+                    }
+                    JsonArrayBuilder createArrayBuilder = Json.createArrayBuilder();
+
+                    for (Cell cell : r) {
+                        if (cell == null) {
+                            continue;
+                        }
+
+                        String returnStringValue = ExcelReader.returnStringValue(cell);
+                        returnStringValue = Jsoup.clean(returnStringValue, Safelist.basicWithImages().addAttributes("span", "style"));
+                        createArrayBuilder.add(returnStringValue);
+                    }
+                    linesBuilder.add(String.valueOf(rowNumber), createArrayBuilder);
+                    rowNumber++;
+                }
+            }
+        } catch (IOException ex) {
+            System.getLogger(ExcelReader.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
+        }
+        return linesBuilder.build();
+    }
+
+    public static List<SheetModel> readExcelFileToSheets(byte[] bytes) {
 
         List<SheetModel> sheets = new ArrayList();
 
@@ -87,8 +175,6 @@ public class ExcelReader {
                 sheetModel.setName(sheet.getSheetName());
                 int rowNumber = 0;
 
-                int leftiestColumnIndex = -1;
-
                 for (Row r : sheet) {
                     if (rowNumber == 0) {
                         for (Cell cell : r) {
@@ -98,11 +184,6 @@ public class ExcelReader {
                             int columnIndex = cell.getColumnIndex();
                             int rowIndex = cell.getRowIndex();
 
-                            // this condition has for effect to store permanently the column index of the first column non empty on the left - which might not always be the one at index 0
-                            if ((leftiestColumnIndex == -1) && columnIndex > leftiestColumnIndex) {
-                                leftiestColumnIndex = columnIndex;
-                            }
-
                             String cellStringValue = ExcelReader.returnStringValue(cell);
                             cellStringValue = Jsoup.clean(cellStringValue, Safelist.basicWithImages().addAttributes("span", "style"));
 
@@ -110,18 +191,8 @@ public class ExcelReader {
                             ColumnModel cmHeader = new ColumnModel(String.valueOf(columnIndex), cellStringValue);
                             headerNames.add(cmHeader);
 
-                            if (gazeOption.equals("sim") && columnIndex > leftiestColumnIndex) {
-                                // adding the first line as a cells (in case the first line is not a header)
-                                String[] valuesInColumn = cellStringValue.split(separator);
-                                int valueCount = 0;
-                                for (String value : valuesInColumn) {
-                                    CellRecord cellRecord = new CellRecord(rowIndex, columnIndex + valueCount++, value.trim());
-                                    sheetModel.addCellRecord(cellRecord);
-                                }
-                            } else {
-                                CellRecord cellRecord = new CellRecord(rowIndex, columnIndex, cellStringValue);
-                                sheetModel.addCellRecord(cellRecord);
-                            }
+                            CellRecord cellRecord = new CellRecord(rowIndex, columnIndex, cellStringValue);
+                            sheetModel.addCellRecordToVariousDataStructures(cellRecord);
                         }
                         sheetModel.setTableHeaderNames(headerNames);
                     }
@@ -132,29 +203,18 @@ public class ExcelReader {
                             continue;
                         }
 
-                        int columnIndex = cell.getColumnIndex();
-                        int rowIndex = cell.getRowIndex();
-
                         String returnStringValue = ExcelReader.returnStringValue(cell);
                         returnStringValue = Jsoup.clean(returnStringValue, Safelist.basicWithImages().addAttributes("span", "style"));
 
-                        // in the case of the similarity computation function, it is desirable to split the content of the target cell so that each value is taken as a separate target
-                        if (gazeOption.equals("sim") && columnIndex > leftiestColumnIndex) {
-                            String[] valuesInColumn = returnStringValue.split(separator);
-                            int valueCount = 0;
-                            for (String value : valuesInColumn) {
-                                CellRecord cellRecord = new CellRecord(rowIndex, columnIndex + valueCount++, value.trim());
-                                sheetModel.addCellRecord(cellRecord);
-                            }
-                        } else {
-                            CellRecord cellRecord = new CellRecord(cell.getRowIndex(), cell.getColumnIndex(), returnStringValue);
-                            sheetModel.addCellRecord(cellRecord);
-                        }
+                        CellRecord cellRecord = new CellRecord(cell.getRowIndex(), cell.getColumnIndex(), returnStringValue);
+                        sheetModel.addCellRecordToVariousDataStructures(cellRecord);
 
                     }
                 }
                 sheets.add(sheetModel);
             }
+        } catch (IOException ex) {
+            System.getLogger(ExcelReader.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
         }
         return sheets;
     }
@@ -204,5 +264,4 @@ public class ExcelReader {
         }
         return "error decoding value of the cell";
     }
-
 }

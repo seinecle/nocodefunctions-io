@@ -35,8 +35,6 @@ public class ImportTxtEndPoints {
 
             byte[] byteArray = APIController.byteArraySerializerForSheets(sheets);
             Files.write(APIController.globals.getInputDataPath(jobId), byteArray);
-            Files.deleteIfExists(inputFilePath);
-
             ctx.result("OK").status(HttpURLConnection.HTTP_OK);
         });
 

@@ -23,7 +23,7 @@ public class ImportCsvEndPoints {
 
     public static Javalin addAll(Javalin app) throws Exception {
 
-        app.post("/api/import/csv", ctx -> {
+        app.post("/api/import/csv/toSheets", ctx -> {
             increment();
             String jobId = ctx.queryParam("jobId");
             String fileName = ctx.queryParam("fileName");
@@ -36,10 +36,10 @@ public class ImportCsvEndPoints {
                     List<SheetModel> sheets = csvImporter.importCsvFile(fileBytes, fileName);
 
                     byte[] byteArray = APIController.byteArraySerializerForSheets(sheets);
-                    Files.write(APIController.globals.getDataSheetPath(jobId, jobId), byteArray);
+                    Files.write(APIController.globals.getDataSheetPath(jobId), byteArray);
                     Files.deleteIfExists(tempDataPath);
 
-                    ctx.result(byteArray).status(HttpURLConnection.HTTP_OK);
+                    ctx.result("OK").status(HttpURLConnection.HTTP_OK);
                 } catch (IOException e) {
                     ctx.status(HttpURLConnection.HTTP_INTERNAL_ERROR).result("Error processing file.");
                 }

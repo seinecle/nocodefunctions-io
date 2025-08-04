@@ -1,32 +1,26 @@
 package net.clementlevallois.importers.model;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.*;
 
-/**
- *
- * @author LEVALLOIS
- */
 public class SheetModel implements Serializable {
 
     private String name;
-    private List<CellRecord> cellRecords = new ArrayList();
-    private final Map<Integer, List<CellRecord>> rowIndexToCellRecords = new HashMap();
-    private final Map<Integer, List<CellRecord>> columnIndexToCellRecords = new HashMap();
-    private Map<Integer, Integer> pageAndStartingLine = new TreeMap();
+    private List<CellRecord> cellRecords = new ArrayList<>();
 
-    private final List< Map<String, ColumnModel>> sheetData = new ArrayList();
-    private final List<String> sheetDataWholeLines = new ArrayList();
-    private List<ColumnModel> tableHeaderNames;
+    private final Map<Integer, List<CellRecord>> rowIndexToCellRecords = new HashMap<>();
+    private final Map<Integer, List<CellRecord>> columnIndexToCellRecords = new HashMap<>();
+    private Map<Integer, Integer> pageAndStartingLine = new TreeMap<>();
+
+    private List<Map<String, ColumnModel>> sheetData = new ArrayList();
+    private List<String> sheetDataWholeLines = new ArrayList();
+
+    private List<ColumnModel> tableHeaderNames = new ArrayList();
     private boolean hasHeaders = false;
 
     public SheetModel() {
     }
-        
+
     public SheetModel(String name) {
         this.name = name;
     }
@@ -47,18 +41,13 @@ public class SheetModel implements Serializable {
         this.cellRecords = cellRecords;
     }
 
-    public void addCellRecord(CellRecord cellRecord) {
+    public void addCellRecordToVariousDataStructures(CellRecord cellRecord) {
         cellRecords.add(cellRecord);
-        int colIndex = cellRecord.getColIndex();
         int rowIndex = cellRecord.getRowIndex();
+        int colIndex = cellRecord.getColIndex();
 
-        List<CellRecord> cellRecordsInThisRow = rowIndexToCellRecords.getOrDefault(rowIndex, new ArrayList());
-        cellRecordsInThisRow.add(cellRecord);
-        rowIndexToCellRecords.put(rowIndex, cellRecordsInThisRow);
-
-        List<CellRecord> cellRecordsInThisColumn = columnIndexToCellRecords.getOrDefault(colIndex, new ArrayList());
-        cellRecordsInThisColumn.add(cellRecord);
-        columnIndexToCellRecords.put(colIndex, cellRecordsInThisColumn);
+        rowIndexToCellRecords.computeIfAbsent(rowIndex, k -> new ArrayList<>()).add(cellRecord);
+        columnIndexToCellRecords.computeIfAbsent(colIndex, k -> new ArrayList<>()).add(cellRecord);
 
         if (rowIndex < 10) {
             String fullRow;
@@ -80,8 +69,7 @@ public class SheetModel implements Serializable {
                     fullRowStringBuilder.append(" |x| ");
                 }
             }
-            // this is for the case of twitter data,
-            // where the value to be shown in the datatable is formatted with html,
+            // this is for the case when the value to be shown in the datatable is formatted with html,
             // not the text stored as a raw value.
             String valueToShowInTable;
             if (cellRecord.getValueWithExtraFormatting() == null) {
@@ -89,7 +77,7 @@ public class SheetModel implements Serializable {
             } else {
                 valueToShowInTable = cellRecord.getValueWithExtraFormatting();
             }
-            if (valueToShowInTable == null){
+            if (valueToShowInTable == null) {
                 valueToShowInTable = "";
             }
             fullRowStringBuilder.append(valueToShowInTable.trim());
@@ -124,7 +112,7 @@ public class SheetModel implements Serializable {
     }
 
     public List<Map<String, ColumnModel>> getSheetData() {
-        if (!hasHeaders || sheetData.isEmpty()) {
+        if (sheetData == null || !hasHeaders || sheetData.isEmpty()) {
             return sheetData;
         } else {
             return sheetData.subList(1, sheetData.size());
@@ -132,28 +120,26 @@ public class SheetModel implements Serializable {
     }
 
     public List<String> getSheetDataWholeLines() {
-        if (!hasHeaders | sheetDataWholeLines.size() < 1) {
+        if (!hasHeaders || sheetDataWholeLines.size() < 1) {
             return sheetDataWholeLines;
         } else {
-            return sheetDataWholeLines.subList(1, sheetData.size());
+            return sheetDataWholeLines.subList(1, sheetDataWholeLines.size());
         }
     }
 
     public List<ColumnModel> getTableHeaderNames() {
-        if (hasHeaders) {
-            return tableHeaderNames;
-        } else {
-            if (tableHeaderNames == null) {
-                return null;
+        tableHeaderNames = new ArrayList();
+        if (sheetData != null && !sheetData.isEmpty()) {
+            Map<String, ColumnModel> firstRow = sheetData.get(0);
+            for (Map.Entry<String, ColumnModel> entry : firstRow.entrySet()) {
+                String colIndex = entry.getKey();
+                String label = hasHeaders
+                        ? entry.getValue().getCellValue()
+                        : "column " + (Integer.parseInt(colIndex) + 1);
+                tableHeaderNames.add(new ColumnModel(colIndex, label));
             }
-            List<ColumnModel> headersLess = new ArrayList();
-            int i = 1;
-            for (ColumnModel cm : tableHeaderNames) {
-                ColumnModel newModel = new ColumnModel(cm.getColIndex(), "column " + i++);
-                headersLess.add(newModel);
-            }
-            return headersLess;
         }
+        return tableHeaderNames;
     }
 
     public void setTableHeaderNames(List<ColumnModel> tableHeaderNames) {
@@ -183,5 +169,4 @@ public class SheetModel implements Serializable {
     public void setPageAndStartingLine(Map<Integer, Integer> pageAndStartingLine) {
         this.pageAndStartingLine = pageAndStartingLine;
     }
-
 }

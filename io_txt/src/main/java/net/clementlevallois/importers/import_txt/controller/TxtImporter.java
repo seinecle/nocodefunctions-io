@@ -62,7 +62,7 @@ public class TxtImporter {
                     }
                     field = Jsoup.clean(field, Safelist.basicWithImages().addAttributes("span", "style"));
                     CellRecord cellRecord = new CellRecord(j, i++, field.trim());
-                    sheetModel.addCellRecord(cellRecord);
+                    sheetModel.addCellRecordToVariousDataStructures(cellRecord);
                 }
                 j++;
             }

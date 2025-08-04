@@ -59,7 +59,7 @@ public class CsvImporter {
                         field = "";
                     }
                     field = Jsoup.clean(field, Safelist.basicWithImages().addAttributes("span", "style"));
-                    sheetModel.addCellRecord(new CellRecord(j, i, field));
+                    sheetModel.addCellRecordToVariousDataStructures(new CellRecord(j, i, field));
                 }
             }
             sheets.add(sheetModel);

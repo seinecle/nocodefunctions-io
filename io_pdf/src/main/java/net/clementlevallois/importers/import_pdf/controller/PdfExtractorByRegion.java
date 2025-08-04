@@ -50,7 +50,7 @@ public class PdfExtractorByRegion {
             int docPagesCount = doc.getPages().getCount();
             if (!allPages && selectedPage > docPagesCount) {
                 CellRecord cellRecord = new CellRecord(0, 0, "selected page is higher than the count of pages in the doc");
-                sheetModel.addCellRecord(cellRecord);
+                sheetModel.addCellRecordToVariousDataStructures(cellRecord);
                 return sheetModel;
             }
 
@@ -94,7 +94,7 @@ public class PdfExtractorByRegion {
             sheetModel.setTableHeaderNames(headerNames);
             for (Map.Entry<Integer, String> line : textPerPage.entrySet()) {
                 CellRecord cellRecord = new CellRecord(line.getKey(), 0, line.getValue());
-                sheetModel.addCellRecord(cellRecord);
+                sheetModel.addCellRecordToVariousDataStructures(cellRecord);
             }
 
         } catch (IOException ex) {
