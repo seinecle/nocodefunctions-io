@@ -10,6 +10,7 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonReader;
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.StringReader;
 import java.net.HttpURLConnection;
@@ -20,6 +21,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.concurrent.ConcurrentHashMap;
+import net.clementlevallois.functions.model.Globals;
 import net.clementlevallois.functions.model.Occurrence;
 import net.clementlevallois.functions.model.WorkflowTopicsProps;
 import net.clementlevallois.importers.model.SheetModel;
@@ -40,7 +43,7 @@ public class ExportXlsEndPoints {
 
     public static Javalin addAll(Javalin app) throws Exception {
 
-        app.post("/api/export/xlsx/umigon", ctx -> {
+        app.post(Globals.EXPORT_ENDPOINT_ROOT + "xlsx/umigon", ctx -> {
             increment();
 
             String lang = ctx.queryParam("lang");
@@ -59,17 +62,26 @@ public class ExportXlsEndPoints {
             }
         });
 
-        app.post("/api/export/xlsx/pdf_region_extractor", ctx -> {
+        app.get(Globals.EXPORT_ENDPOINT_ROOT + "region_extractor_results", ctx -> {
             increment();
 
-            byte[] bodyAsBytes = ctx.bodyAsBytes();
-            ByteArrayInputStream bis = new ByteArrayInputStream(bodyAsBytes);
-            ObjectInputStream ois = new ObjectInputStream(bis);
-            Map<String, SheetModel> documents = (Map<String, SheetModel>) ois.readObject();
-
-            byte[] exportPdfRegionExtractor = ExcelSaver.exportPdfRegionExtractor(documents);
-
-            ctx.result(exportPdfRegionExtractor).status(HttpURLConnection.HTTP_OK);
+            String jobId = ctx.queryParam("jobId");
+            Path jobDirectory = APIController.globals.getJobDirectory(jobId);
+            Path resultsFile = jobDirectory.resolve(jobId + Globals.GLOBAL_RESULTS_BYTE_FILE_EXTENSION);
+            if (Files.exists(resultsFile)) {
+                try {
+                    byte[] readAllBytes = Files.readAllBytes(resultsFile);
+                    try (ByteArrayInputStream bis = new ByteArrayInputStream(readAllBytes); ObjectInputStream ois = new ObjectInputStream(bis)) {
+                        ConcurrentHashMap<String, SheetModel> results = (ConcurrentHashMap<String, SheetModel>) ois.readObject();
+                        byte[] exportPdfRegionExtractor = ExcelSaver.exportPdfRegionExtractor(results);
+                        ctx.result(exportPdfRegionExtractor).status(HttpURLConnection.HTTP_OK);
+                    } catch (IOException | ClassNotFoundException ex) {
+                        ctx.result(ex.getMessage()).status(HttpURLConnection.HTTP_INTERNAL_ERROR);
+                    }
+                } catch (IOException ex) {
+                    ctx.result(ex.getMessage()).status(HttpURLConnection.HTTP_INTERNAL_ERROR);
+                }
+            }
         });
 
         app.post("/api/export/xlsx/organic", ctx -> {

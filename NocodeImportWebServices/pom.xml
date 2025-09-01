@@ -122,16 +122,6 @@
     </dependencies>
     <build>
         <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.13.0</version>
-                <configuration>
-                    <compilerArgs>
-                        <arg>-Xlint</arg>
-                    </compilerArgs>
-                </configuration>
-            </plugin>
             <plugin> 
                 <artifactId>maven-dependency-plugin</artifactId> 
                 <executions> 
@@ -158,6 +148,17 @@
                             <mainClass>net.clementlevallois.nocodeimportwebservices.APIController</mainClass>
                         </manifest>
                     </archive>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.13.0</version>
+                <configuration>
+                    <compilerArgs>
+                        <arg>-Xlint</arg>
+                        <arg>--enable-preview</arg>
+                    </compilerArgs>
                 </configuration>
             </plugin>
         </plugins>

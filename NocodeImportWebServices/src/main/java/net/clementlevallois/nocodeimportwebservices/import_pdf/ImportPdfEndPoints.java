@@ -17,16 +17,23 @@ import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.StructuredTaskScope;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-import net.clementlevallois.functions.model.FunctionPdfRegionExtract;
+import java.util.stream.Collectors;
+import net.clementlevallois.functions.model.FunctionRegionExtract;
+import net.clementlevallois.functions.model.Globals;
+import static net.clementlevallois.functions.model.Globals.GlobalQueryParams.CALLBACK_URL;
+import static net.clementlevallois.functions.model.Globals.GlobalQueryParams.JOB_ID;
 import net.clementlevallois.importers.import_pdf.controller.PdfImporter;
 import net.clementlevallois.importers.import_pdf.controller.PdfExtractorByRegion;
 import net.clementlevallois.importers.import_pdf.controller.PdfToPngConverter;
-import net.clementlevallois.importers.model.CellRecord;
 import net.clementlevallois.importers.model.ImagesPerFile;
 import net.clementlevallois.importers.model.SheetModel;
 import net.clementlevallois.nocodeimportwebservices.APIController;
@@ -97,13 +104,12 @@ public class ImportPdfEndPoints {
 
         });
 
-        app.get("/api/import/pdf/return-png", ctx -> {
+        app.get("/api/import/pdf/pages-to-png", ctx -> {
             increment();
             String jobId = ctx.queryParam("jobId");
-            String fileUniqueId = ctx.queryParam("fileUniqueId");
             String fileName = ctx.queryParam("fileName");
 
-            var inputFilePath = APIController.globals.getInputFileCompletePath(jobId, fileUniqueId);
+            var inputFilePath = APIController.globals.getJobDirectory(jobId).resolve(fileName);
             byte[] fileBytes = Files.readAllBytes(inputFilePath);
             try (InputStream is = new ByteArrayInputStream(fileBytes)) {
                 PdfToPngConverter pdfToPngConverter = new PdfToPngConverter();
@@ -112,103 +118,84 @@ public class ImportPdfEndPoints {
                 ipf.setImages(images);
                 ipf.setFileName(fileName);
                 var imageBytes = APIController.byteArraySerializerForAnyObject(ipf);
-                Files.write(APIController.globals.getPngPath(jobId, fileUniqueId), imageBytes);
+                Files.write(APIController.globals.getAllPngPath(jobId), imageBytes);
             }
             ctx.result("OK").status(HttpURLConnection.HTTP_OK);
         });
 
-        app.get("/api/import/pdf/extract-region", ctx -> {
-            String owner = ctx.queryParam("owner");
-            if (owner == null || !owner.equals(APIController.pwdOwner)) {
-                NaiveRateLimit.requestPerTimeUnit(ctx, 50, TimeUnit.SECONDS);
-                APIController.increment();
-            }
+        app.get("/api/import/" + FunctionRegionExtract.ENDPOINT, ctx -> {
+            try {
+                String owner = ctx.queryParam("owner");
+                if (owner == null || !owner.equals(APIController.pwdOwner)) {
+                    NaiveRateLimit.requestPerTimeUnit(ctx, 50, TimeUnit.SECONDS);
+                    APIController.increment();
+                }
 
-            PdfExtractionRequest request = new PdfExtractionRequest();
-            JsonObjectBuilder errorBuilder = Json.createObjectBuilder();
+                PdfExtractionRequest request = new PdfExtractionRequest();
+                JsonObjectBuilder errorBuilder = Json.createObjectBuilder();
 
-            if (!parseBody(ctx, request, errorBuilder)) {
-                ctx.result(errorBuilder.build().toString()).status(HttpURLConnection.HTTP_BAD_REQUEST);
-                return;
-            }
+                parseQueryParams(ctx, request);
 
-            parseQueryParams(ctx, request);
+                Path jobDir = APIController.globals.getJobDirectory(request.getJobId());
+                @SuppressWarnings("unchecked")
+                List<Path> uploadedFiles = new ArrayList();
+                try (var stream = Files.list(jobDir)) {
+                    uploadedFiles = stream
+                            .filter(Files::isRegularFile)
+                            .filter(path -> path.getFileName().toString().startsWith(Globals.UPLOADED_FILE_PREFIX))
+                            .toList();
+                } catch (IOException ex) {
+                    Exceptions.printStackTrace(ex);
+                }
+                ConcurrentHashMap<String, SheetModel> results = new ConcurrentHashMap();
+                try (var scope = new StructuredTaskScope.ShutdownOnFailure()) {
+                    for (Path path : uploadedFiles) {
+                        scope.fork(() -> {
+                            String fileNameWithoutPrefix = path.getFileName().toString().replace(Globals.UPLOADED_FILE_PREFIX, "");
+                            try (InputStream is = Files.newInputStream(path)) {
+                                PdfExtractorByRegion pibr = new PdfExtractorByRegion();
+                                SheetModel data = pibr.extractTextFromRegionInPdf(
+                                        is,
+                                        fileNameWithoutPrefix,
+                                        request.isAllPages(),
+                                        request.getSelectedPage(),
+                                        request.getLeftCornerX(),
+                                        request.getLeftCornerY(),
+                                        request.getWidth(),
+                                        request.getHeight()
+                                );
+                                results.put(fileNameWithoutPrefix, data);
+                                return null;
+                            } catch (IOException ex) {
+                                throw ex;
+                            }
+                        });
+                    }
 
-            if (request.getPdfAsBytes() == null) {
-                errorBuilder.add("-99", "no pdf in the payload");
-                ctx.result(errorBuilder.build().toString()).status(HttpURLConnection.HTTP_BAD_REQUEST);
-                return;
-            }
+                    scope.join();
+                    scope.throwIfFailed();  // rethrow first failure (cancels siblings)
+                } catch (Exception e) {
+                    Exceptions.printStackTrace(e);
+                    errorBuilder.add("-99", "Internal Server Error during PDF extraction: " + e.getMessage());
+                    ctx.result(errorBuilder.build().toString()).status(HttpURLConnection.HTTP_INTERNAL_ERROR);
+                    return;
+                }
 
-            byte[] byteArray;
-            try (InputStream stream = new ByteArrayInputStream(request.getPdfAsBytes())) {
-                PdfExtractorByRegion pibr = new PdfExtractorByRegion();
-                SheetModel data = pibr.extractTextFromRegionInPdf(
-                        stream,
-                        request.getFileName(),
-                        request.isAllPages(),
-                        request.getSelectedPage(),
-                        request.getLeftCornerX(),
-                        request.getLeftCornerY(),
-                        request.getWidth(),
-                        request.getHeight()
-                );
-                byteArray = APIController.byteArraySerializerForAnyObject(data);
+                byte[] bytes = APIController.byteArraySerializerForAnyObject(results);
+                Path out = jobDir.resolve(request.getJobId() + Globals.GLOBAL_RESULTS_BYTE_FILE_EXTENSION);
+                try {
+                    Files.write(out, bytes, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+                } catch (IOException e) {
+                    Exceptions.printStackTrace(e);
+                    errorBuilder.add("-99", "Internal Server Error writing result.bytes: " + e.getMessage());
+                    ctx.result(errorBuilder.build().toString()).status(HttpURLConnection.HTTP_INTERNAL_ERROR);
+                }
+
             } catch (IOException ex) {
                 Exceptions.printStackTrace(ex);
-                errorBuilder.add("-99", "Internal Server Error during PDF extraction: " + ex.getMessage());
-                ctx.result(errorBuilder.build().toString()).status(HttpURLConnection.HTTP_INTERNAL_ERROR);
-                return;
             }
-
-            ctx.result(byteArray).status(HttpURLConnection.HTTP_OK);
         });
         return app;
-    }
-
-    /**
-     * Parses the JSON request body and populates the PdfExtractionRequest
-     * object. Uses a switch expression on the BodyParams enum for
-     * exhaustiveness.
-     *
-     * @param ctx The Javalin context.
-     * @param request The PdfExtractionRequest object to populate.
-     * @param errorBuilder The JsonObjectBuilder to add error messages to.
-     * @return true if parsing was successful and required fields are present,
-     * false otherwise.
-     */
-    private static boolean parseBody(Context ctx, PdfExtractionRequest request, JsonObjectBuilder errorBuilder) {
-        try {
-            String body = new String(ctx.bodyAsBytes(), StandardCharsets.US_ASCII);
-            if (body.isEmpty()) {
-                errorBuilder.add("-99", "body of the request should not be empty");
-                return false;
-            }
-
-            JsonReader jsonReader = Json.createReader(new StringReader(body));
-            JsonObject jsonObject = jsonReader.readObject();
-
-            for (var entry : jsonObject.entrySet()) {
-                String key = entry.getKey();
-                Optional<FunctionPdfRegionExtract.BodyParams> bp = APIController.enumValueOf(FunctionPdfRegionExtract.BodyParams.class, key);
-
-                if (bp.isPresent()) {
-                    Consumer<String> bodyParamHandler = switch (bp.get()) {
-                        case PDF_BYTES ->
-                            s -> request.setPdfAsBytes(Base64.getDecoder().decode(jsonObject.getString(key)));
-                        case FILE_NAME ->
-                            s -> request.setFileName(jsonObject.getString(key));
-                    };
-                    bodyParamHandler.accept(key);
-                } else {
-                    System.out.println("PdfExtractEndPoint: Unknown body parameter key: " + key);
-                }
-            }
-        } catch (Exception e) {
-            errorBuilder.add("-99", "Failed to parse request body: " + e.getMessage());
-            return false;
-        }
-        return true;
     }
 
     /**
@@ -224,12 +211,13 @@ public class ImportPdfEndPoints {
             String key = entry.getKey();
             String decodedParamValue = URLDecoder.decode(entry.getValue().getFirst(), StandardCharsets.UTF_8);
 
-            Optional<FunctionPdfRegionExtract.QueryParams> qp = APIController.enumValueOf(FunctionPdfRegionExtract.QueryParams.class, key);
+            Optional<FunctionRegionExtract.QueryParams> qp = APIController.enumValueOf(FunctionRegionExtract.QueryParams.class, key);
+            Optional<Globals.GlobalQueryParams> gqp = APIController.enumValueOf(Globals.GlobalQueryParams.class, key);
 
             if (qp.isPresent()) {
                 Consumer<String> queryParamHandler = switch (qp.get()) {
-                    case OWNER ->
-                        request::setOwner;
+                    case FILE_NAME_PREFIX ->
+                        request::setFileNamePrefix;
                     case ALL_PAGES ->
                         s -> request.setAllPages(Boolean.parseBoolean(s));
                     case SELECTED_PAGES ->
@@ -244,6 +232,14 @@ public class ImportPdfEndPoints {
                         s -> request.setHeight(Float.valueOf(s));
                 };
                 queryParamHandler.accept(decodedParamValue);
+            } else if (gqp.isPresent()) {
+                Consumer<String> gqpHandler = switch (gqp.get()) {
+                    case CALLBACK_URL ->
+                        request::setCallbackURL;
+                    case JOB_ID ->
+                        request::setJobId;
+                };
+                gqpHandler.accept(decodedParamValue);
             } else {
                 System.out.println("PdfExtractEndPoint: Unknown query parameter key: " + key);
             }

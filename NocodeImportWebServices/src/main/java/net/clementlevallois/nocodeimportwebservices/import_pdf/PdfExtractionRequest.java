@@ -2,7 +2,8 @@ package net.clementlevallois.nocodeimportwebservices.import_pdf;
 
 
 public class PdfExtractionRequest {
-    private byte[] pdfAsBytes;
+    private String jobId;
+    private String callbackURL;
     private String fileName;
     private boolean allPages;
     private Integer selectedPage;
@@ -16,20 +17,28 @@ public class PdfExtractionRequest {
     public PdfExtractionRequest() {
     }
 
-    // Getters and setters for all fields
-    public byte[] getPdfAsBytes() {
-        return pdfAsBytes;
+    public String getJobId() {
+        return jobId;
     }
 
-    public void setPdfAsBytes(byte[] pdfAsBytes) {
-        this.pdfAsBytes = pdfAsBytes;
+    public void setJobId(String jobId) {
+        this.jobId = jobId;
     }
+
+    public String getCallbackURL() {
+        return callbackURL;
+    }
+
+    public void setCallbackURL(String callbackURL) {
+        this.callbackURL = callbackURL;
+    }
+
 
     public String getFileName() {
         return fileName;
     }
 
-    public void setFileName(String fileName) {
+    public void setFileNamePrefix(String fileName) {
         this.fileName = fileName;
     }
 
