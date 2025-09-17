@@ -43,22 +43,32 @@ public class ExportXlsEndPoints {
 
     public static Javalin addAll(Javalin app) throws Exception {
 
-        app.post(Globals.EXPORT_ENDPOINT_ROOT + "xlsx/umigon", ctx -> {
+        app.get(Globals.EXPORT_ENDPOINT_ROOT + "xlsx/umigon", ctx -> {
             increment();
 
             String lang = ctx.queryParam("lang");
+            String jobId = ctx.queryParam("jobId");
 
-            byte[] bodyAsBytes = ctx.bodyAsBytes();
-            ByteArrayInputStream bis = new ByteArrayInputStream(bodyAsBytes);
-            ObjectInputStream ois = new ObjectInputStream(bis);
-            List<Document> documents = (List<Document>) ois.readObject();
+            Globals globals = new Globals(APIController.tempFilesFolder);
+            Path resultsPath = globals.getResultInBinaryFormat(jobId);
+            try {
+                byte[] resultsBytes = Files.readAllBytes(resultsPath);
+                try (ByteArrayInputStream bais = new ByteArrayInputStream(resultsBytes); ObjectInputStream ois = new ObjectInputStream(bais)) {
 
-            if (documents == null) {
-                String errorMessage = "documents in body of umigon export to excel was null";
-                ctx.result(errorMessage.getBytes(StandardCharsets.UTF_8)).status(HttpURLConnection.HTTP_BAD_REQUEST);
-            } else {
-                byte[] exportUmigon = ExcelSaver.exportUmigon(documents, lang);
-                ctx.result(exportUmigon).status(HttpURLConnection.HTTP_OK);
+                    @SuppressWarnings("unchecked")
+                    List<Document> documents = (List<Document>) ois.readObject();
+                    if (documents == null) {
+                        String errorMessage = "documents in body of umigon export to excel was null";
+                        ctx.result(errorMessage.getBytes(StandardCharsets.UTF_8)).status(HttpURLConnection.HTTP_BAD_REQUEST);
+                    } else {
+                        byte[] exportUmigon = ExcelSaver.exportUmigon(documents, lang);
+                        ctx.result(exportUmigon).status(HttpURLConnection.HTTP_OK);
+                    }
+                }
+            } catch (IOException | ClassNotFoundException e) {
+                String errorMessage = "internal error processing umigon results to excel";
+                ctx.result(errorMessage).status(HttpURLConnection.HTTP_INTERNAL_ERROR);
+
             }
         });
 
@@ -72,6 +82,7 @@ public class ExportXlsEndPoints {
                 try {
                     byte[] readAllBytes = Files.readAllBytes(resultsFile);
                     try (ByteArrayInputStream bis = new ByteArrayInputStream(readAllBytes); ObjectInputStream ois = new ObjectInputStream(bis)) {
+                        @SuppressWarnings("unchecked")
                         ConcurrentHashMap<String, SheetModel> results = (ConcurrentHashMap<String, SheetModel>) ois.readObject();
                         byte[] exportPdfRegionExtractor = ExcelSaver.exportPdfRegionExtractor(results);
                         ctx.result(exportPdfRegionExtractor).status(HttpURLConnection.HTTP_OK);
@@ -92,6 +103,7 @@ public class ExportXlsEndPoints {
             byte[] bodyAsBytes = ctx.bodyAsBytes();
             ByteArrayInputStream bis = new ByteArrayInputStream(bodyAsBytes);
             ObjectInputStream ois = new ObjectInputStream(bis);
+            @SuppressWarnings("unchecked")
             List<Document> documents = (List<Document>) ois.readObject();
 
             byte[] exportOrganic = ExcelSaver.exportOrganic(documents, lang);
@@ -99,13 +111,15 @@ public class ExportXlsEndPoints {
             ctx.result(exportOrganic).status(HttpURLConnection.HTTP_OK);
         });
 
-        app.post("/api/export/xlsx/topics", ctx -> {
+        app.get("/api/export/xlsx/topics", ctx -> {
             increment();
             WorkflowTopicsProps props = new WorkflowTopicsProps(APIController.tempFilesFolder);
 
             int nbTerms = Integer.parseInt(ctx.queryParam("nbTerms"));
             String jobId = ctx.queryParam("jobId");
+            @SuppressWarnings("unchecked")
             Map<Integer, Multiset<String>> keywordsPerTopic = new TreeMap();
+            @SuppressWarnings("unchecked")
             Map<Integer, Multiset<Integer>> topicsPerLine = new TreeMap();
 
             Path jsonResults = props.getGlobalResultsJsonFilePath(jobId);
@@ -116,6 +130,7 @@ public class ExportXlsEndPoints {
             for (String keyCommunity : keywordsPerTopicAsJson.keySet()) {
                 JsonObject termsAndFrequenciesForThisCommunity = keywordsPerTopicAsJson.getJsonObject(keyCommunity);
                 Iterator<String> iteratorTerms = termsAndFrequenciesForThisCommunity.keySet().iterator();
+                @SuppressWarnings("unchecked")
                 Multiset<String> termsAndFreqs = new Multiset();
                 while (iteratorTerms.hasNext()) {
                     String nextTerm = iteratorTerms.next();
@@ -145,6 +160,7 @@ public class ExportXlsEndPoints {
             byte[] bodyAsBytes = ctx.bodyAsBytes();
             ByteArrayInputStream bis = new ByteArrayInputStream(bodyAsBytes);
             ObjectInputStream ois = new ObjectInputStream(bis);
+            @SuppressWarnings("unchecked")
             List<String[]> results = (List<String[]>) ois.readObject();
 
             byte[] exportHighlights = ExcelSaver.exportHighlighted(results);
