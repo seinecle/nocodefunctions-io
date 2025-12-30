@@ -25,7 +25,6 @@
         <module>io_csv</module>
         <module>io_xlsx</module>
         <module>io_model</module>
-        <module>NocodeImportWebServices</module>
         <module>io_json</module>
         <module>io_pdf</module>
         <module>io_html</module>

@@ -23,7 +23,7 @@ public class HtmlImporter {
 
     private final String userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64), this is a crawler, AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36";
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws Exception {
         String urlExample = "https://viewfindr.net/";
         HtmlImporter importer = new HtmlImporter();
         String rawText = importer.importHtmlPageToSimpleLines(urlExample);
@@ -32,7 +32,7 @@ public class HtmlImporter {
 
     }
 
-    public String importHtmlPageToSimpleLines(String urlParam) {
+    public String importHtmlPageToSimpleLines(String urlParam) throws Exception {
 
         urlParam = urlParam.trim();
 
@@ -40,10 +40,7 @@ public class HtmlImporter {
             urlParam = "https://" + urlParam;
         }
         String text = "";
-        try {
-            Document doc = Jsoup
-                    .connect(urlParam)
-                    .userAgent(userAgent).get();
+            Document doc = Jsoup.connect(urlParam).userAgent(userAgent).get();
 
             // Remove unwanted elements by selectors, including all <a> tags
             doc.select("div.advertisement, footer, .sidebar").remove();
@@ -65,9 +62,6 @@ public class HtmlImporter {
                 text = text.replace("\n\n", "\n");
             }
 
-        } catch (IOException e) {
-            System.out.println("error in html import function when accessing " + urlParam);
-        }
         return text;
     }
 
