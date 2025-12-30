@@ -16,7 +16,7 @@ import org.junit.jupiter.api.Test;
 public class GeneralTest {
 
     @Test
-    public void singlePageImport() {
+    public void singlePageImport() throws Exception {
         String urlExample = "https://viewfindr.net/";
         HtmlImporter importer = new HtmlImporter();
         String rawText = importer.importHtmlPageToSimpleLines(urlExample);
@@ -24,7 +24,7 @@ public class GeneralTest {
     }
 
     @Test
-    public void websiteImport() {
+    public void websiteImport() throws Exception {
         String urlExample = "https://viewfindr.net/";
         HtmlImporter importer = new HtmlImporter();
         String rawText = importer.importWebsiteToListOfUrls(urlExample, 2, new HashSet());
@@ -32,7 +32,7 @@ public class GeneralTest {
     }
 
     @Test
-    public void websiteImportExcludingKeywords() {
+    public void websiteImportExcludingKeywords() throws Exception {
         String urlExample = "https://www.psoe.es/";
         Set<String> toExclude = Set.of("photo");
         HtmlImporter importer = new HtmlImporter();
