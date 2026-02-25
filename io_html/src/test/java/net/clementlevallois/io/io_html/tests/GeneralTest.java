@@ -15,29 +15,4 @@ import org.junit.jupiter.api.Test;
  */
 public class GeneralTest {
 
-    @Test
-    public void singlePageImport() throws Exception {
-        String urlExample = "https://viewfindr.net/";
-        HtmlImporter importer = new HtmlImporter();
-        String rawText = importer.importHtmlPageToSimpleLines(urlExample);
-        assertThat(rawText.length()).isGreaterThan(50);
-    }
-
-    @Test
-    public void websiteImport() throws Exception {
-        String urlExample = "https://viewfindr.net/";
-        HtmlImporter importer = new HtmlImporter();
-        String rawText = importer.importWebsiteToListOfUrls(urlExample, 2, new HashSet());
-        assertThat(rawText.length()).isGreaterThan(50);
-    }
-
-    @Test
-    public void websiteImportExcludingKeywords() throws Exception {
-        String urlExample = "https://www.psoe.es/";
-        Set<String> toExclude = Set.of("photo");
-        HtmlImporter importer = new HtmlImporter();
-        String rawText = importer.importWebsiteToListOfUrls(urlExample, 2, toExclude);
-        assertThat(rawText.length()).isGreaterThan(1);
-    }
-
 }

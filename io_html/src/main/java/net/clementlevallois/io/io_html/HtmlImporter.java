@@ -4,6 +4,11 @@ import jakarta.json.Json;
 import jakarta.json.JsonArrayBuilder;
 import jakarta.json.JsonObjectBuilder;
 import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.Duration;
 import java.util.HashSet;
 import java.util.Set;
 import static java.util.stream.Collectors.toSet;
@@ -21,7 +26,7 @@ import us.codecraft.webmagic.scheduler.QueueScheduler;
  */
 public class HtmlImporter {
 
-    private final String userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64), this is a crawler, AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36";
+    private final String userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 
     public static void main(String[] args) throws Exception {
         String urlExample = "https://viewfindr.net/";
@@ -39,28 +44,63 @@ public class HtmlImporter {
         if (!urlParam.startsWith("http")) {
             urlParam = "https://" + urlParam;
         }
-        String text = "";
-            Document doc = Jsoup.connect(urlParam).userAgent(userAgent).get();
 
-            // Remove unwanted elements by selectors, including all <a> tags
-            doc.select("div.advertisement, footer, .sidebar").remove();
+        String htmlContent;
 
-            doc.select("*[class*='menu'], *[class*='logo'], *[class*='-toc']").not("html, header, body, p").remove();
-
-            // Add a line break after the text of every element
-            addLineBreaksToAllElements(doc);
-
-            // After removing unwanted elements, get the text of the remaining document
-            text = doc.wholeText();
-
-            while (text.contains("  ")) {
-                text = text.replace("  ", " ");
+        // First try with JSoup
+        try {
+            Document doc = Jsoup.connect(urlParam)
+                    .userAgent(userAgent)
+                    .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8")
+                    .header("Accept-Language", "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7")
+                    .header("Cache-Control", "max-age=0")
+                    .header("Sec-Ch-Ua", "\"Google Chrome\";v=\"120\", \"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"120\"")
+                    .header("Sec-Ch-Ua-Mobile", "?0")
+                    .header("Sec-Ch-Ua-Platform", "\"Windows\"")
+                    .header("Sec-Fetch-Dest", "document")
+                    .header("Sec-Fetch-Mode", "navigate")
+                    .header("Sec-Fetch-Site", "none")
+                    .header("Sec-Fetch-User", "?1")
+                    .header("Upgrade-Insecure-Requests", "1")
+                    .timeout(30000)
+                    .followRedirects(true)
+                    .ignoreHttpErrors(false)
+                    .get();
+            htmlContent = doc.html();
+        } catch (Exception e) {
+            // If JSoup fails with HTTP error (like 403), try with curl
+            String errorMsg = e.getMessage() != null ? e.getMessage() : "";
+            System.out.println("JSoup error for " + urlParam + ": " + e.getClass().getName() + " - " + errorMsg);
+            if (errorMsg.contains("Status=403") || errorMsg.contains("Status=406") || e.getClass().getSimpleName().equals("HttpStatusException")) {
+                System.out.println("Attempting curl fallback for: " + urlParam);
+                htmlContent = fetchWithNativeClient(urlParam);
+            } else {
+                throw e;
             }
-            text = text.replaceAll("\r", "\n");
-            text = text.replaceAll("\t", "\n");
-            while (text.contains("\n\n")) {
-                text = text.replace("\n\n", "\n");
-            }
+        }
+
+        // Parse the HTML content with JSoup
+        Document doc = Jsoup.parse(htmlContent, urlParam);
+
+        // Remove unwanted elements by selectors
+        doc.select("div.advertisement, footer, .sidebar").remove();
+
+        doc.select("*[class*='menu'], *[class*='logo'], *[class*='-toc']").not("html, header, body, p").remove();
+
+        // Add a line break after the text of every element
+        addLineBreaksToAllElements(doc);
+
+        // After removing unwanted elements, get the text of the remaining document
+        String text = doc.wholeText();
+
+        while (text.contains("  ")) {
+            text = text.replace("  ", " ");
+        }
+        text = text.replaceAll("\r", "\n");
+        text = text.replaceAll("\t", "\n");
+        while (text.contains("\n\n")) {
+            text = text.replace("\n\n", "\n");
+        }
 
         return text;
     }
@@ -78,6 +118,13 @@ public class HtmlImporter {
             Document doc = Jsoup
                     .connect(urlParam)
                     .userAgent(userAgent)
+                    .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8")
+                    .header("Accept-Language", "en-US,en;q=0.9,fr;q=0.8")
+                    .header("Accept-Encoding", "gzip, deflate, br")
+                    .header("Connection", "keep-alive")
+                    .header("Upgrade-Insecure-Requests", "1")
+                    .timeout(30000)
+                    .followRedirects(true)
                     .get();
 
             // Select all links within the document
@@ -104,6 +151,10 @@ public class HtmlImporter {
         Set<String> urls = new HashSet();
         if (!domaineName.startsWith("http")) {
             domaineName = "https://" + domaineName;
+        }
+        // Remove trailing slash to avoid double slashes when appending paths
+        if (domaineName.endsWith("/")) {
+            domaineName = domaineName.substring(0, domaineName.length() - 1);
         }
         try {
             SimpleWebCrawler crawler = new SimpleWebCrawler(domaineName, exclusionTerms, maxUrl);
@@ -141,6 +192,45 @@ public class HtmlImporter {
         for (Element element : elements) {
             element.appendText("\n");
         }
+    }
+
+    /**
+     * Fetch HTML content using system curl command.
+     * This is used as a fallback when JSoup is blocked by anti-bot measures.
+     * Using curl because some sites use TLS fingerprinting to block Java clients.
+     */
+    private String fetchWithNativeClient(String urlParam) throws Exception {
+        System.out.println("Attempting to fetch with curl: " + urlParam);
+
+        ProcessBuilder pb = new ProcessBuilder(
+                "curl", "-sL",
+                "-H", "User-Agent: " + userAgent,
+                "-H", "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+                "-H", "Accept-Language: fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7",
+                "-H", "Cache-Control: max-age=0",
+                "-H", "Sec-Ch-Ua: \"Google Chrome\";v=\"120\", \"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"120\"",
+                "-H", "Sec-Ch-Ua-Mobile: ?0",
+                "-H", "Sec-Ch-Ua-Platform: \"Windows\"",
+                "-H", "Sec-Fetch-Dest: document",
+                "-H", "Sec-Fetch-Mode: navigate",
+                "-H", "Sec-Fetch-Site: none",
+                "-H", "Sec-Fetch-User: ?1",
+                "-H", "Upgrade-Insecure-Requests: 1",
+                "--max-time", "30",
+                urlParam
+        );
+        pb.redirectErrorStream(true);
+
+        Process process = pb.start();
+        String htmlContent = new String(process.getInputStream().readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+        int exitCode = process.waitFor();
+
+        if (exitCode != 0 || htmlContent.isEmpty()) {
+            throw new IOException("Curl failed with exit code " + exitCode + " for URL: " + urlParam);
+        }
+
+        System.out.println("Successfully fetched " + htmlContent.length() + " bytes with curl");
+        return htmlContent;
     }
 
 }

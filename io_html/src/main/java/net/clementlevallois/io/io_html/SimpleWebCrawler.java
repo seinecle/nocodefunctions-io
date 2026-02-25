@@ -30,9 +30,19 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 
 public class SimpleWebCrawler implements PageProcessor {
 
-    private final String userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64), this is a crawler, AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36";
+    private final String userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
     private final String SITEMAP_NAMESPACE = "http://www.sitemaps.org/schemas/sitemap/0.9";
-    private final Site site = Site.me().setRetryTimes(3).setSleepTime(100).setUseGzip(true).setUserAgent(userAgent);
+    private final Site site = Site.me()
+            .setRetryTimes(3)
+            .setSleepTime(200)
+            .setUseGzip(true)
+            .setUserAgent(userAgent)
+            .addHeader("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8")
+            .addHeader("Accept-Language", "en-US,en;q=0.9,fr;q=0.8")
+            .addHeader("Accept-Encoding", "gzip, deflate, br")
+            .addHeader("Connection", "keep-alive")
+            .addHeader("Upgrade-Insecure-Requests", "1")
+            .setTimeOut(30000);
     private final Set<String> urls = Collections.synchronizedSet(new HashSet<>());
     private final String domain;
     private final Set<String> exclusionTerms;
@@ -176,8 +186,18 @@ public class SimpleWebCrawler implements PageProcessor {
                 driver = getOrCreateWebDriver();
                 driver.get(page.getRequest().getUrl());
 
+                // Wait for page to be ready (more generic than waiting for specific element)
                 WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
-                wait.until(ExpectedConditions.visibilityOfElementLocated(By.cssSelector("nav.main_nav")));
+                wait.until(webDriver ->
+                    ((org.openqa.selenium.JavascriptExecutor) webDriver)
+                        .executeScript("return document.readyState").equals("complete"));
+
+                // Additional wait for any dynamic content to load
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                }
 
                 List<WebElement> links = driver.findElements(By.xpath("//a[@href]"));
                 for (WebElement link : links) {

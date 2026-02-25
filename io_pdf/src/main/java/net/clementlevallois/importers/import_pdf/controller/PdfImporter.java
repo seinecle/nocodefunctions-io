@@ -141,4 +141,36 @@ public class PdfImporter {
         return sheets;
     }
 
+    public String importPdfFileToTextWithPageBreaks(InputStream is) {
+        try (PDDocument doc = Loader.loadPDF(new RandomAccessReadBuffer(is))) {
+            PDFTextStripper pdfTextStripper = new PDFTextStripper();
+            int numberOfPages = doc.getPages().getCount();
+            StringBuilder sb = new StringBuilder();
+
+            for (int pageNumber = 1; pageNumber <= numberOfPages; pageNumber++) {
+                if (pageNumber > 1) {
+                    sb.append("\n---PAGE_BREAK---\n");
+                }
+                PageExtractor pageExtractor = new PageExtractor(doc, pageNumber, pageNumber);
+                try (PDDocument pageAsDoc = pageExtractor.extract()) {
+                    String textInPage = pdfTextStripper.getText(pageAsDoc);
+                    String[] linesArray = textInPage.split("\\r?\\n");
+                    Map<Integer, String> lines = new TreeMap<>();
+                    int i = 0;
+                    for (String line : linesArray) {
+                        lines.put(i++, line);
+                    }
+                    lines = Utils.fixHyphenatedWordsAndReturnOriginalEntries(lines);
+                    for (String line : lines.values()) {
+                        sb.append(line).append("\n");
+                    }
+                }
+            }
+            return sb.toString();
+        } catch (IOException ex) {
+            System.out.println("PDF import with page breaks failed: empty or corrupted file, or not pdf");
+            return "";
+        }
+    }
+
 }
